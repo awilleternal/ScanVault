@@ -13,10 +13,12 @@ const __dirname = path.dirname(__filename);
  */
 export class FileHandlerService {
   constructor() {
-    this.tempDir = process.env.TEMP_DIR || path.join(__dirname, '../../../temp');
-    this.uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '../../../uploads');
+    this.tempDir =
+      process.env.TEMP_DIR || path.join(__dirname, '../../../temp');
+    this.uploadDir =
+      process.env.UPLOAD_DIR || path.join(__dirname, '../../../uploads');
     // Initialize directories asynchronously
-    this.initDirectories().catch(error => {
+    this.initDirectories().catch((error) => {
       console.error('Failed to initialize FileHandlerService:', error);
     });
   }
@@ -28,7 +30,10 @@ export class FileHandlerService {
     try {
       await fs.mkdir(this.tempDir, { recursive: true });
       await fs.mkdir(this.uploadDir, { recursive: true });
-      console.log('Directories initialized:', { tempDir: this.tempDir, uploadDir: this.uploadDir });
+      console.log('Directories initialized:', {
+        tempDir: this.tempDir,
+        uploadDir: this.uploadDir,
+      });
     } catch (error) {
       console.error('Failed to create directories:', error);
       throw error;
@@ -45,24 +50,26 @@ export class FileHandlerService {
     const extractPath = path.join(this.tempDir, extractId);
 
     try {
-      console.log(`Starting extraction - ID: ${extractId}, Path: ${extractPath}`);
-      
+      console.log(
+        `Starting extraction - ID: ${extractId}, Path: ${extractPath}`
+      );
+
       // Create extraction directory
       await fs.mkdir(extractPath, { recursive: true });
 
       // Extract ZIP file with security options disabled for testing
       console.log('Opening ZIP file:', zipPath);
-      const zip = new StreamZip.async({ 
+      const zip = new StreamZip.async({
         file: zipPath,
         storeEntries: true,
-        skipEntryNameValidation: true
+        skipEntryNameValidation: true,
       });
-      
+
       // Validate ZIP file
       console.log('Checking ZIP entries...');
       const entriesCount = await zip.entriesCount;
       console.log(`ZIP contains ${entriesCount} entries`);
-      
+
       if (entriesCount === 0) {
         throw new Error('ZIP file is empty');
       }
@@ -71,25 +78,25 @@ export class FileHandlerService {
       console.log('Getting ZIP entries...');
       const entries = await zip.entries();
       console.log(`Processing ${Object.keys(entries).length} entries...`);
-      
+
       let processedCount = 0;
       for (const entryName in entries) {
         const entry = entries[entryName];
-        
+
         // Basic path traversal protection only
         if (entryName.includes('..') || path.isAbsolute(entryName)) {
           console.warn(`Skipping potentially dangerous path: ${entryName}`);
           continue;
         }
-        
+
         // Extract the entry
         if (!entry.isDirectory) {
           const outputPath = path.join(extractPath, entryName);
           const outputDir = path.dirname(outputPath);
-          
+
           // Ensure output directory exists
           await fs.mkdir(outputDir, { recursive: true });
-          
+
           // Extract file
           const data = await zip.entryData(entryName);
           await fs.writeFile(outputPath, data);
@@ -98,13 +105,13 @@ export class FileHandlerService {
           const dirPath = path.join(extractPath, entryName);
           await fs.mkdir(dirPath, { recursive: true });
         }
-        
+
         processedCount++;
         if (processedCount % 100 === 0) {
           console.log(`Processed ${processedCount} files...`);
         }
       }
-      
+
       console.log(`Extraction completed: ${processedCount} files processed`);
       await zip.close();
 
@@ -118,7 +125,7 @@ export class FileHandlerService {
         path: extractPath,
         fileCount: entriesCount,
       };
-      
+
       console.log('Extraction result:', result);
       return result;
     } catch (error) {
@@ -196,13 +203,13 @@ export class FileHandlerService {
    */
   async countFiles(dirPath) {
     let count = 0;
-    
+
     async function countRecursive(dir) {
       const entries = await fs.readdir(dir, { withFileTypes: true });
-      
+
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
-        
+
         if (entry.isDirectory()) {
           // Skip .git directory
           if (entry.name !== '.git') {
@@ -227,7 +234,7 @@ export class FileHandlerService {
       // Validate that the path is within our temp directory
       const resolvedPath = path.resolve(targetPath);
       const resolvedTempDir = path.resolve(this.tempDir);
-      
+
       if (!resolvedPath.startsWith(resolvedTempDir)) {
         throw new Error('Attempted to clean up path outside of temp directory');
       }
@@ -248,8 +255,10 @@ export class FileHandlerService {
     const folderPath = path.join(this.tempDir, folderId);
 
     try {
-      console.log(`Processing folder upload - ID: ${folderId}, Files: ${files.length}`);
-      
+      console.log(
+        `Processing folder upload - ID: ${folderId}, Files: ${files.length}`
+      );
+
       // Create folder directory
       await fs.mkdir(folderPath, { recursive: true });
 
@@ -257,27 +266,32 @@ export class FileHandlerService {
       for (const file of files) {
         // Get relative path - handle both regular files and folder structure
         let relativePath;
-        if (file.originalname.includes('/') || file.originalname.includes('\\')) {
+        if (
+          file.originalname.includes('/') ||
+          file.originalname.includes('\\')
+        ) {
           // Already has path structure
           relativePath = file.originalname;
         } else {
           // Single file, use as-is
           relativePath = file.originalname;
         }
-        
+
         // Sanitize the path to prevent directory traversal
-        const safePath = relativePath.replace(/\.\./g, '').replace(/^[/\\]+/, '');
+        const safePath = relativePath
+          .replace(/\.\./g, '')
+          .replace(/^[/\\]+/, '');
         const targetPath = path.join(folderPath, safePath);
         const targetDir = path.dirname(targetPath);
-        
+
         console.log(`Processing file: ${file.originalname} -> ${safePath}`);
-        
+
         // Ensure target directory exists
         await fs.mkdir(targetDir, { recursive: true });
-        
+
         // Copy file from upload location to structured folder
         await fs.copyFile(file.path, targetPath);
-        
+
         // Clean up original uploaded file
         try {
           await fs.unlink(file.path);
@@ -294,19 +308,19 @@ export class FileHandlerService {
         path: folderPath,
         fileCount: files.length,
       };
-      
+
       console.log('Folder processing result:', result);
       return result;
     } catch (error) {
       console.error('Folder processing error:', error);
-      
+
       // Clean up on error
       try {
         await fs.rm(folderPath, { recursive: true, force: true });
       } catch (cleanupError) {
         console.error('Cleanup failed:', cleanupError);
       }
-      
+
       // Also clean up uploaded files
       for (const file of files) {
         try {
@@ -315,7 +329,7 @@ export class FileHandlerService {
           console.warn('Failed to cleanup uploaded file:', unlinkError);
         }
       }
-      
+
       throw new Error(`Failed to process folder upload: ${error.message}`);
     }
   }
@@ -327,7 +341,7 @@ export class FileHandlerService {
   async validateFolderForScanning(folderPath) {
     try {
       console.log('Validating folder structure for scanning:', folderPath);
-      
+
       // Check if folder exists and is accessible
       const stats = await fs.stat(folderPath);
       if (!stats.isDirectory()) {
@@ -336,10 +350,12 @@ export class FileHandlerService {
 
       // Get folder contents recursively to validate structure
       const files = await this.getFileList(folderPath);
-      console.log(`Folder contains ${files.length} files, ready for vulnerability scanning`);
+      console.log(
+        `Folder contains ${files.length} files, ready for vulnerability scanning`
+      );
 
       // Check for common project files that scanners can analyze
-      const projectFiles = files.filter(file => {
+      const projectFiles = files.filter((file) => {
         const fileName = path.basename(file).toLowerCase();
         return (
           fileName.includes('package.json') ||
@@ -359,9 +375,13 @@ export class FileHandlerService {
       });
 
       if (projectFiles.length > 0) {
-        console.log(`Found ${projectFiles.length} scannable files in uploaded folder`);
+        console.log(
+          `Found ${projectFiles.length} scannable files in uploaded folder`
+        );
       } else {
-        console.warn('No common project files found - scanners may have limited results');
+        console.warn(
+          'No common project files found - scanners may have limited results'
+        );
       }
 
       return true;
@@ -378,17 +398,25 @@ export class FileHandlerService {
    */
   async getFileList(dirPath) {
     const files = [];
-    
+
     async function traverse(currentPath) {
       const entries = await fs.readdir(currentPath, { withFileTypes: true });
-      
+
       for (const entry of entries) {
         const fullPath = path.join(currentPath, entry.name);
-        
+
         if (entry.isDirectory()) {
           // Skip hidden directories and common ignore patterns
-          if (!entry.name.startsWith('.') && 
-              !['node_modules', '__pycache__', 'target', 'build', 'dist'].includes(entry.name)) {
+          if (
+            !entry.name.startsWith('.') &&
+            ![
+              'node_modules',
+              '__pycache__',
+              'target',
+              'build',
+              'dist',
+            ].includes(entry.name)
+          ) {
             await traverse(fullPath);
           }
         } else {
@@ -407,13 +435,13 @@ export class FileHandlerService {
   async cleanupOldFiles() {
     try {
       const entries = await fs.readdir(this.tempDir, { withFileTypes: true });
-      const oneHourAgo = Date.now() - (60 * 60 * 1000);
+      const oneHourAgo = Date.now() - 60 * 60 * 1000;
 
       for (const entry of entries) {
         if (entry.isDirectory()) {
           const dirPath = path.join(this.tempDir, entry.name);
           const stats = await fs.stat(dirPath);
-          
+
           if (stats.mtimeMs < oneHourAgo) {
             await this.cleanup(dirPath);
           }

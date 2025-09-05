@@ -13,19 +13,22 @@ function ResultsDashboard({ scanResults, onDownload }) {
   const [activeTab, setActiveTab] = useState('overview');
 
   // Separate results by tool
-  const semgrepResults = scanResults.filter(result => result.tool === 'Semgrep');
-  const trivyResults = scanResults.filter(result => result.tool === 'Trivy');
-  const odcResults = scanResults.filter(result => result.tool === 'OWASP Dependency Check');
+  const semgrepResults = scanResults.filter(
+    (result) => result.tool === 'Semgrep'
+  );
+  const trivyResults = scanResults.filter((result) => result.tool === 'Trivy');
+  const odcResults = scanResults.filter(
+    (result) => result.tool === 'OWASP Dependency Check'
+  );
 
   // Group results by severity for each tool
-  const groupResultsBySeverity = (results) => {
-    return results.reduce((acc, result) => {
+  const groupResultsBySeverity = (results) =>
+    results.reduce((acc, result) => {
       const severity = result.severity || 'INFO';
       if (!acc[severity]) acc[severity] = [];
       acc[severity].push(result);
       return acc;
     }, {});
-  };
 
   const groupedResults = groupResultsBySeverity(scanResults);
   const semgrepGrouped = groupResultsBySeverity(semgrepResults);
@@ -102,10 +105,10 @@ function ResultsDashboard({ scanResults, onDownload }) {
       default:
         currentResults = scanResults;
     }
-    
-    return filterSeverity === 'ALL' 
-      ? currentResults 
-      : currentResults.filter(r => r.severity === filterSeverity);
+
+    return filterSeverity === 'ALL'
+      ? currentResults
+      : currentResults.filter((r) => r.severity === filterSeverity);
   };
 
   const filteredResults = getCurrentResults();
@@ -146,7 +149,7 @@ function ResultsDashboard({ scanResults, onDownload }) {
         <h2 className="text-xl font-bold text-gray-900 mb-6">
           Security Scan Results Summary
         </h2>
-        
+
         {/* Tab Navigation */}
         <div className="border-b border-gray-200 mb-6">
           <nav className="-mb-px flex space-x-8">
@@ -199,34 +202,41 @@ function ResultsDashboard({ scanResults, onDownload }) {
             <div className="flex">
               <div className="ml-3">
                 <p className="text-sm text-blue-700">
-                  <span className="font-medium">Semgrep</span> finds security vulnerabilities, bugs, and anti-patterns in your source code.
-                  These issues are found in your application logic and require code changes to fix.
+                  <span className="font-medium">Semgrep</span> finds security
+                  vulnerabilities, bugs, and anti-patterns in your source code.
+                  These issues are found in your application logic and require
+                  code changes to fix.
                 </p>
               </div>
             </div>
           </div>
         )}
-        
+
         {activeTab === 'trivy' && (
           <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-6">
             <div className="flex">
               <div className="ml-3">
                 <p className="text-sm text-green-700">
-                  <span className="font-medium">Trivy</span> scans your dependencies and container images for known security vulnerabilities.
-                  These issues can be fixed by updating to newer, patched versions of your dependencies.
+                  <span className="font-medium">Trivy</span> scans your
+                  dependencies and container images for known security
+                  vulnerabilities. These issues can be fixed by updating to
+                  newer, patched versions of your dependencies.
                 </p>
               </div>
             </div>
           </div>
         )}
-        
+
         {activeTab === 'odc' && (
           <div className="bg-orange-50 border-l-4 border-orange-400 p-4 mb-6">
             <div className="flex">
               <div className="ml-3">
                 <p className="text-sm text-orange-700">
-                  <span className="font-medium">OWASP Dependency Check</span> identifies project dependencies and checks for known, publicly disclosed vulnerabilities.
-                  These CVE vulnerabilities can be fixed by updating to patched versions or removing vulnerable dependencies.
+                  <span className="font-medium">OWASP Dependency Check</span>{' '}
+                  identifies project dependencies and checks for known, publicly
+                  disclosed vulnerabilities. These CVE vulnerabilities can be
+                  fixed by updating to patched versions or removing vulnerable
+                  dependencies.
                 </p>
               </div>
             </div>
@@ -235,7 +245,9 @@ function ResultsDashboard({ scanResults, onDownload }) {
 
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
           <div className="text-center">
-            <p className="text-3xl font-bold text-gray-900">{currentStats.total}</p>
+            <p className="text-3xl font-bold text-gray-900">
+              {currentStats.total}
+            </p>
             <p className="text-sm text-gray-600">Total Issues</p>
           </div>
           {Object.entries(severityConfig).map(([severity, config]) => (
@@ -253,7 +265,10 @@ function ResultsDashboard({ scanResults, onDownload }) {
       <div className="card">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <label htmlFor="severity-filter" className="text-sm font-medium text-gray-700 mr-2">
+            <label
+              htmlFor="severity-filter"
+              className="text-sm font-medium text-gray-700 mr-2"
+            >
               Filter by severity:
             </label>
             <select
@@ -270,14 +285,24 @@ function ResultsDashboard({ scanResults, onDownload }) {
               ))}
             </select>
           </div>
-          
+
           <div className="flex gap-2">
             <button
               onClick={() => onDownload('json')}
               className="btn btn-secondary"
             >
-              <svg className="w-4 h-4 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+              <svg
+                className="w-4 h-4 mr-2 inline"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+                />
               </svg>
               Download JSON
             </button>
@@ -285,8 +310,18 @@ function ResultsDashboard({ scanResults, onDownload }) {
               onClick={() => onDownload('pdf')}
               className="btn btn-primary"
             >
-              <svg className="w-4 h-4 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+              <svg
+                className="w-4 h-4 mr-2 inline"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+                />
               </svg>
               Download PDF Report
             </button>
@@ -298,53 +333,64 @@ function ResultsDashboard({ scanResults, onDownload }) {
       <div className="space-y-4">
         {filteredResults.length === 0 ? (
           <div className="card text-center py-12">
-            <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-16 h-16 mx-auto text-gray-400 mb-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             <p className="text-lg text-gray-600">
-              {filterSeverity === 'ALL' 
+              {filterSeverity === 'ALL'
                 ? 'No security issues found! Your code is clean.'
                 : `No ${filterSeverity} severity issues found.`}
             </p>
           </div>
         ) : (
           filteredResults.map((result) => {
-            const config = severityConfig[result.severity] || severityConfig.INFO;
+            const config =
+              severityConfig[result.severity] || severityConfig.INFO;
             const isExpanded = expandedItems.has(result.id);
-            
+
             // Add tool-specific styling
             const toolConfig = {
-              'Semgrep': {
+              Semgrep: {
                 accent: 'border-blue-500',
                 bgAccent: 'bg-blue-50',
                 iconBg: 'bg-blue-100',
                 icon: '🔍',
-                label: 'Code Analysis'
+                label: 'Code Analysis',
               },
-              'Trivy': {
+              Trivy: {
                 accent: 'border-green-500',
                 bgAccent: 'bg-green-50',
                 iconBg: 'bg-green-100',
                 icon: '📦',
-                label: 'Dependency Scan'
+                label: 'Dependency Scan',
               },
               'OWASP Dependency Check': {
                 accent: 'border-orange-500',
                 bgAccent: 'bg-orange-50',
                 iconBg: 'bg-orange-100',
                 icon: '🛡️',
-                label: 'CVE Database'
-              }
+                label: 'CVE Database',
+              },
             };
-            
+
             const currentToolConfig = toolConfig[result.tool] || {
               accent: 'border-gray-500',
               bgAccent: 'bg-gray-50',
               iconBg: 'bg-gray-100',
               icon: '🔧',
-              label: 'Security Tool'
+              label: 'Security Tool',
             };
-            
+
             return (
               <div
                 key={result.id}
@@ -362,8 +408,12 @@ function ResultsDashboard({ scanResults, onDownload }) {
                           {result.severity}
                         </span>
                         <div className="flex items-center gap-1">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${currentToolConfig.bgAccent} ${currentToolConfig.accent.replace('border-', 'text-')}`}>
-                            <span className="mr-1">{currentToolConfig.icon}</span>
+                          <span
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${currentToolConfig.bgAccent} ${currentToolConfig.accent.replace('border-', 'text-')}`}
+                          >
+                            <span className="mr-1">
+                              {currentToolConfig.icon}
+                            </span>
                             {result.tool}
                           </span>
                           <span className="text-xs text-gray-500">
@@ -386,11 +436,16 @@ function ResultsDashboard({ scanResults, onDownload }) {
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   </div>
                 </div>
-                
+
                 {isExpanded && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <div className="space-y-3">
@@ -402,7 +457,7 @@ function ResultsDashboard({ scanResults, onDownload }) {
                           {result.description}
                         </p>
                       </div>
-                      
+
                       {result.fix && (
                         <div>
                           <h5 className="text-sm font-medium text-gray-700">
@@ -413,7 +468,7 @@ function ResultsDashboard({ scanResults, onDownload }) {
                           </p>
                         </div>
                       )}
-                      
+
                       {result.references && (
                         <div>
                           <h5 className="text-sm font-medium text-gray-700">
@@ -422,7 +477,12 @@ function ResultsDashboard({ scanResults, onDownload }) {
                           <ul className="list-disc list-inside text-sm text-gray-600 mt-1">
                             {result.references.map((ref, idx) => (
                               <li key={idx}>
-                                <a href={ref} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
+                                <a
+                                  href={ref}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary-600 hover:underline"
+                                >
                                   {ref}
                                 </a>
                               </li>

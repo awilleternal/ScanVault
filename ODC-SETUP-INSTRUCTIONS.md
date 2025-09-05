@@ -1,8 +1,9 @@
 # 🛡️ OWASP Dependency Check Integration - Setup Complete!
 
 ## ✅ Integration Status
+
 - ✅ **ODCBridge service created** - Following WSL2Bridge patterns
-- ✅ **ScanOrchestrator updated** - Now uses real ODC instead of mocked results  
+- ✅ **ScanOrchestrator updated** - Now uses real ODC instead of mocked results
 - ✅ **Environment configuration** - Configurable ODC path and API key support
 - ✅ **Documentation updated** - README.md includes setup instructions
 - ✅ **Testing framework** - ODC bridge tests and setup helper script
@@ -10,15 +11,19 @@
 ## 🚀 Quick Start
 
 ### 1. Set Environment Variables
+
 Since you have ODC installed and working, you need to either:
 
 **Option A: Add ODC to your system PATH**
+
 1. Find where you extracted dependency-check (e.g., `C:\dependency-check\`)
 2. Add the `bin` folder to your Windows PATH environment variable
 3. Restart your terminal/IDE
 
 **Option B: Set ODC_PATH environment variable (Recommended)**
+
 1. Create a `.env` file in the `backend` folder:
+
 ```bash
 # Backend/.env
 NODE_ENV=development
@@ -37,14 +42,18 @@ ODC_PATH=C:\tool_forhackthon\dependency-check\bin\dependency-check.bat
 ```
 
 ### 2. Verify Setup
+
 Run the setup helper script:
+
 ```bash
 cd backend
 node setup-odc.js
 ```
 
 ### 3. Test Integration
+
 Start your application:
+
 ```bash
 # From project root
 npm run dev
@@ -53,15 +62,18 @@ npm run dev
 ## 🔧 What Was Integrated
 
 ### New Files Created:
+
 - `backend/src/services/odcBridge.js` - Main ODC integration service
 - `backend/src/test/odcBridge.test.js` - Unit tests for ODC bridge
 - `backend/setup-odc.js` - Setup helper script
 
 ### Modified Files:
+
 - `backend/src/services/scanOrchestrator.js` - Updated to use real ODC
 - `README.md` - Added ODC setup instructions
 
 ### Key Features:
+
 1. **Real ODC Integration**: Executes actual dependency-check.bat commands
 2. **Configurable Path**: Uses ODC_PATH environment variable if ODC not in PATH
 3. **NVD API Key Support**: Optional API key for faster CVE database updates
@@ -97,7 +109,7 @@ node setup-odc.js
 ## 🛡️ Security Considerations
 
 - ✅ **Command injection prevention**: Proper argument escaping in spawn
-- ✅ **Path validation**: Target paths validated and sanitized  
+- ✅ **Path validation**: Target paths validated and sanitized
 - ✅ **Temporary file cleanup**: ODC output files cleaned up after parsing
 - ✅ **Error handling**: No sensitive data leaked in error messages
 - ✅ **Timeout protection**: Configurable scan timeout prevents hanging
@@ -105,12 +117,13 @@ node setup-odc.js
 ## 📊 Expected ODC Results
 
 When ODC finds vulnerabilities, you'll see results like:
+
 ```json
 {
   "id": "CVE-2020-8203",
   "tool": "OWASP Dependency Check",
   "severity": "HIGH",
-  "type": "Vulnerable Dependency", 
+  "type": "Vulnerable Dependency",
   "file": "lodash-4.17.11.jar",
   "line": 0,
   "description": "Prototype pollution vulnerability in lodash",
@@ -129,15 +142,18 @@ When ODC finds vulnerabilities, you'll see results like:
 ## 🐛 Troubleshooting
 
 **ODC not detected?**
+
 - Verify `dependency-check.bat --version` works in your terminal
 - Check ODC_PATH environment variable is correct
 - Restart development server after setting environment variables
 
 **Scans timing out?**
+
 - Increase SCAN_TIMEOUT value (default: 5 minutes)
 - Get NVD API key to speed up database updates
 
 **No vulnerabilities found?**
+
 - ODC scans for dependency files (package.json, pom.xml, etc.)
 - Test with projects that have known vulnerable dependencies
 

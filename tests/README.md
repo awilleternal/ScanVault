@@ -27,6 +27,7 @@ tests/
 ## Test Categories
 
 ### 1. Upload Tests (`upload.spec.js`)
+
 - File upload interface validation
 - ZIP file upload and validation
 - File size limit enforcement
@@ -34,6 +35,7 @@ tests/
 - Upload progress monitoring
 
 ### 2. Repository Tests (`repository.spec.js`)
+
 - Repository URL validation
 - Git repository cloning
 - Authentication handling
@@ -41,6 +43,7 @@ tests/
 - Various Git provider support
 
 ### 3. Scanner Selection Tests (`scanner-selection.spec.js`)
+
 - Scanner option display
 - Multiple scanner selection
 - Scanner metadata display
@@ -48,6 +51,7 @@ tests/
 - Time estimation
 
 ### 4. Progress Monitoring Tests (`scan-progress.spec.js`)
+
 - Progress display and updates
 - WebSocket connection handling
 - Fallback progress simulation
@@ -55,6 +59,7 @@ tests/
 - Scan completion detection
 
 ### 5. Results Dashboard Tests (`results-dashboard.spec.js`)
+
 - Results display and formatting
 - Severity filtering
 - Tab navigation (Overview, Semgrep, Trivy)
@@ -62,6 +67,7 @@ tests/
 - Report downloads (JSON/PDF)
 
 ### 6. API Integration Tests (`api-integration.spec.js`)
+
 - Health check endpoint
 - Upload API validation
 - Scan initiation API
@@ -70,6 +76,7 @@ tests/
 - Security headers validation
 
 ### 7. End-to-End Workflow Tests (`e2e-workflow.spec.js`)
+
 - Complete file upload workflow
 - Complete repository URL workflow
 - Multiple scan iterations
@@ -79,6 +86,7 @@ tests/
 ## Running Tests
 
 ### Prerequisites
+
 ```bash
 # Install dependencies
 npm install
@@ -135,16 +143,19 @@ The main configuration is in `playwright.config.js` with the following key featu
 ## Test Data and Mocking
 
 ### Mock Data
+
 - Located in `tests/fixtures/testFiles.js`
 - Includes sample scan results, repository URLs, and test configurations
 - Provides realistic test data for comprehensive testing
 
 ### API Mocking
+
 - Tests use Playwright's route interception for API mocking
 - Allows testing various scenarios (success, error, timeout)
 - Enables testing without actual backend dependencies
 
 ### Test Files
+
 - Dynamically created ZIP files for upload testing
 - Automatic cleanup after test completion
 - Various file sizes for testing limits
@@ -161,6 +172,7 @@ The `SecurityScannerPage` class provides:
 ## Best Practices
 
 ### Writing Tests
+
 1. Use Page Object Model for maintainable tests
 2. Include proper wait conditions and timeouts
 3. Clean up test data after test completion
@@ -168,12 +180,14 @@ The `SecurityScannerPage` class provides:
 5. Mock external dependencies for reliable testing
 
 ### Test Organization
+
 1. Group related tests in describe blocks
 2. Use beforeEach/afterEach for setup/cleanup
 3. Keep tests independent and isolated
 4. Use meaningful test data and assertions
 
 ### Error Handling
+
 1. Take screenshots on test failures
 2. Include proper error messages
 3. Test both success and failure scenarios
@@ -182,23 +196,29 @@ The `SecurityScannerPage` class provides:
 ## Debugging Tests
 
 ### Debug Mode
+
 ```bash
 npm run test:debug
 ```
+
 Opens Playwright Inspector for step-by-step debugging.
 
 ### UI Mode
+
 ```bash
 npm run test:ui
 ```
+
 Opens Playwright UI for interactive test development and debugging.
 
 ### Screenshots and Videos
+
 - Automatically captured on failures
 - Stored in `test-results/` directory
 - Include timestamps for easy identification
 
 ### Console Logs
+
 - Application console logs are captured
 - Helper functions verify no console errors
 - Network requests can be inspected
@@ -206,6 +226,7 @@ Opens Playwright UI for interactive test development and debugging.
 ## Continuous Integration
 
 ### GitHub Actions
+
 ```yaml
 - name: Install dependencies
   run: npm ci
@@ -225,6 +246,7 @@ Opens Playwright UI for interactive test development and debugging.
 ```
 
 ### Environment Variables
+
 - `CI=true`: Adjusts retry and parallelization for CI
 - `FRONTEND_URL`: Override frontend URL
 - `BACKEND_URL`: Override backend URL
@@ -232,12 +254,14 @@ Opens Playwright UI for interactive test development and debugging.
 ## Maintenance
 
 ### Updating Tests
+
 1. Update selectors when UI changes
 2. Modify mock data when API changes
 3. Add new test cases for new features
 4. Update timeouts if performance changes
 
 ### Monitoring
+
 1. Review test failure patterns
 2. Update flaky tests with better waits
 3. Monitor test execution times
@@ -248,26 +272,31 @@ Opens Playwright UI for interactive test development and debugging.
 ### Common Issues
 
 **Tests failing due to timing**
+
 - Increase timeouts in configuration
 - Add explicit wait conditions
 - Use `page.waitForLoadState()`
 
 **Element not found errors**
+
 - Verify selectors in Playwright Inspector
 - Check if elements are hidden or disabled
 - Use more specific selectors
 
 **Server startup issues**
+
 - Verify ports 3000 and 5000 are available
 - Check server startup logs
 - Ensure all dependencies are installed
 
 **File creation errors**
+
 - Verify write permissions in test directories
 - Check available disk space
 - Ensure cleanup is working properly
 
 ### Getting Help
+
 1. Check Playwright documentation: https://playwright.dev/
 2. Review test logs and screenshots
 3. Use Playwright Inspector for debugging
@@ -276,6 +305,7 @@ Opens Playwright UI for interactive test development and debugging.
 ## Contributing
 
 When adding new tests:
+
 1. Follow existing test patterns
 2. Add appropriate documentation
 3. Include both positive and negative test cases

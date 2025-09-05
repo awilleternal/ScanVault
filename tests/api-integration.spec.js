@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { testConfig, testRepositories } from './fixtures/testFiles.js';
-import { createTestZipFile, cleanupTestFiles, verifyApiEndpoint } from './utils/testHelpers.js';
+import {
+  createTestZipFile,
+  cleanupTestFiles,
+  verifyApiEndpoint,
+} from './utils/testHelpers.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -18,9 +22,12 @@ test.describe('API Integration Tests', () => {
 
   test.describe('Health Check API', () => {
     test('should return healthy status', async ({ page }) => {
-      const response = await verifyApiEndpoint(page, `${testConfig.backend.url}/api/health`);
+      const response = await verifyApiEndpoint(
+        page,
+        `${testConfig.backend.url}/api/health`
+      );
       const data = await response.json();
-      
+
       expect(data.status).toBe('healthy');
       expect(data.timestamp).toBeDefined();
       expect(data.uptime).toBeDefined();
@@ -36,22 +43,27 @@ test.describe('API Integration Tests', () => {
       createdTestFiles.push(testZipPath);
 
       // Create form data for upload
-      const fileContent = await import('fs').then(fs => fs.readFileSync(testZipPath));
-      
+      const fileContent = await import('fs').then((fs) =>
+        fs.readFileSync(testZipPath)
+      );
+
       // Test upload endpoint
-      const response = await page.request.post(`${testConfig.backend.url}/api/upload`, {
-        multipart: {
-          file: {
-            name: 'api-test.zip',
-            mimeType: 'application/zip',
-            buffer: fileContent
-          }
+      const response = await page.request.post(
+        `${testConfig.backend.url}/api/upload`,
+        {
+          multipart: {
+            file: {
+              name: 'api-test.zip',
+              mimeType: 'application/zip',
+              buffer: fileContent,
+            },
+          },
         }
-      });
+      );
 
       expect(response.status()).toBe(200);
       const data = await response.json();
-      
+
       expect(data.id).toBeDefined();
       expect(data.fileName).toBe('api-test.zip');
       expect(data.fileSize).toBeDefined();
@@ -66,16 +78,19 @@ test.describe('API Integration Tests', () => {
       createdTestFiles.push(testTextPath);
 
       const fileContent = fs.readFileSync(testTextPath);
-      
-      const response = await page.request.post(`${testConfig.backend.url}/api/upload`, {
-        multipart: {
-          file: {
-            name: 'api-test.txt',
-            mimeType: 'text/plain',
-            buffer: fileContent
-          }
+
+      const response = await page.request.post(
+        `${testConfig.backend.url}/api/upload`,
+        {
+          multipart: {
+            file: {
+              name: 'api-test.txt',
+              mimeType: 'text/plain',
+              buffer: fileContent,
+            },
+          },
         }
-      });
+      );
 
       expect([400, 500]).toContain(response.status());
       const data = await response.json();
@@ -85,24 +100,30 @@ test.describe('API Integration Tests', () => {
 
     test('should reject files larger than size limit', async ({ page }) => {
       // This test would need a very large file, so we'll test with headers
-      const response = await page.request.post(`${testConfig.backend.url}/api/upload`, {
-        multipart: {
-          file: {
-            name: 'large-file.zip',
-            mimeType: 'application/zip',
-            buffer: Buffer.alloc(101 * 1024 * 1024) // 101MB
-          }
+      const response = await page.request.post(
+        `${testConfig.backend.url}/api/upload`,
+        {
+          multipart: {
+            file: {
+              name: 'large-file.zip',
+              mimeType: 'application/zip',
+              buffer: Buffer.alloc(101 * 1024 * 1024), // 101MB
+            },
+          },
         }
-      });
+      );
 
       // Should reject large files (could be 400, 413, or 500 depending on server config)
       expect([400, 413, 500]).toContain(response.status());
     });
 
     test('should handle missing file in request', async ({ page }) => {
-      const response = await page.request.post(`${testConfig.backend.url}/api/upload`, {
-        data: {}
-      });
+      const response = await page.request.post(
+        `${testConfig.backend.url}/api/upload`,
+        {
+          data: {},
+        }
+      );
 
       expect(response.status()).toBe(400);
       const data = await response.json();
@@ -116,15 +137,18 @@ test.describe('API Integration Tests', () => {
         'not-a-url',
         'ftp://invalid-protocol.com',
         'https://',
-        ''
+        '',
       ];
 
       for (const invalidUrl of invalidUrls) {
-        const response = await page.request.post(`${testConfig.backend.url}/api/clone`, {
-          data: {
-            repositoryUrl: invalidUrl
+        const response = await page.request.post(
+          `${testConfig.backend.url}/api/clone`,
+          {
+            data: {
+              repositoryUrl: invalidUrl,
+            },
           }
-        });
+        );
 
         expect([400, 500]).toContain(response.status());
         const data = await response.json();
@@ -134,15 +158,18 @@ test.describe('API Integration Tests', () => {
     });
 
     test('should handle valid repository URL format', async ({ page }) => {
-      const response = await page.request.post(`${testConfig.backend.url}/api/clone`, {
-        data: {
-          repositoryUrl: testRepositories.validRepository
+      const response = await page.request.post(
+        `${testConfig.backend.url}/api/clone`,
+        {
+          data: {
+            repositoryUrl: testRepositories.validRepository,
+          },
         }
-      });
+      );
 
       // Should either succeed or fail gracefully (depending on network access)
       expect([200, 400, 404, 500]).toContain(response.status());
-      
+
       if (response.status() === 200) {
         const data = await response.json();
         expect(data.id).toBeDefined();
@@ -151,9 +178,12 @@ test.describe('API Integration Tests', () => {
     });
 
     test('should handle missing repository URL', async ({ page }) => {
-      const response = await page.request.post(`${testConfig.backend.url}/api/clone`, {
-        data: {}
-      });
+      const response = await page.request.post(
+        `${testConfig.backend.url}/api/clone`,
+        {
+          data: {},
+        }
+      );
 
       expect(response.status()).toBe(400);
       const data = await response.json();
@@ -171,17 +201,22 @@ test.describe('API Integration Tests', () => {
       await createTestZipFile(testZipPath, 1024);
       createdTestFiles.push(testZipPath);
 
-      const fileContent = await import('fs').then(fs => fs.readFileSync(testZipPath));
-      
-      const uploadResponse = await page.request.post(`${testConfig.backend.url}/api/upload`, {
-        multipart: {
-          file: {
-            name: 'scan-api-test.zip',
-            mimeType: 'application/zip',
-            buffer: fileContent
-          }
+      const fileContent = await import('fs').then((fs) =>
+        fs.readFileSync(testZipPath)
+      );
+
+      const uploadResponse = await page.request.post(
+        `${testConfig.backend.url}/api/upload`,
+        {
+          multipart: {
+            file: {
+              name: 'scan-api-test.zip',
+              mimeType: 'application/zip',
+              buffer: fileContent,
+            },
+          },
         }
-      });
+      );
 
       if (uploadResponse.status() === 200) {
         const uploadData = await uploadResponse.json();
@@ -194,16 +229,19 @@ test.describe('API Integration Tests', () => {
         test.skip('File upload failed, skipping scan test');
       }
 
-      const response = await page.request.post(`${testConfig.backend.url}/api/scan`, {
-        data: {
-          targetId: uploadedFileId,
-          selectedTools: ['Semgrep', 'Trivy']
+      const response = await page.request.post(
+        `${testConfig.backend.url}/api/scan`,
+        {
+          data: {
+            targetId: uploadedFileId,
+            selectedTools: ['Semgrep', 'Trivy'],
+          },
         }
-      });
+      );
 
       expect(response.status()).toBe(200);
       const data = await response.json();
-      
+
       expect(data.scanId).toBeDefined();
       expect(data.websocketUrl).toBeDefined();
       expect(data.status).toBe('started');
@@ -211,11 +249,14 @@ test.describe('API Integration Tests', () => {
     });
 
     test('should reject scan without target ID', async ({ page }) => {
-      const response = await page.request.post(`${testConfig.backend.url}/api/scan`, {
-        data: {
-          selectedTools: ['Semgrep']
+      const response = await page.request.post(
+        `${testConfig.backend.url}/api/scan`,
+        {
+          data: {
+            selectedTools: ['Semgrep'],
+          },
         }
-      });
+      );
 
       expect(response.status()).toBe(400);
       const data = await response.json();
@@ -223,12 +264,15 @@ test.describe('API Integration Tests', () => {
     });
 
     test('should reject scan without selected tools', async ({ page }) => {
-      const response = await page.request.post(`${testConfig.backend.url}/api/scan`, {
-        data: {
-          targetId: 'test-id',
-          selectedTools: []
+      const response = await page.request.post(
+        `${testConfig.backend.url}/api/scan`,
+        {
+          data: {
+            targetId: 'test-id',
+            selectedTools: [],
+          },
         }
-      });
+      );
 
       expect(response.status()).toBe(400);
       const data = await response.json();
@@ -236,12 +280,15 @@ test.describe('API Integration Tests', () => {
     });
 
     test('should reject scan with invalid tools', async ({ page }) => {
-      const response = await page.request.post(`${testConfig.backend.url}/api/scan`, {
-        data: {
-          targetId: 'test-id',
-          selectedTools: ['InvalidTool']
+      const response = await page.request.post(
+        `${testConfig.backend.url}/api/scan`,
+        {
+          data: {
+            targetId: 'test-id',
+            selectedTools: ['InvalidTool'],
+          },
         }
-      });
+      );
 
       // Should either validate tools or start scan (depends on implementation)
       expect([200, 400]).toContain(response.status());
@@ -250,8 +297,10 @@ test.describe('API Integration Tests', () => {
 
   test.describe('Scan Results API', () => {
     test('should return 404 for non-existent scan', async ({ page }) => {
-      const response = await page.request.get(`${testConfig.backend.url}/api/scan/non-existent-id/results`);
-      
+      const response = await page.request.get(
+        `${testConfig.backend.url}/api/scan/non-existent-id/results`
+      );
+
       expect(response.status()).toBe(404);
       const data = await response.json();
       expect(data.error.message).toMatch(/not found/i);
@@ -259,11 +308,13 @@ test.describe('API Integration Tests', () => {
 
     test('should handle scan results request format', async ({ page }) => {
       // Test with a potentially valid scan ID format
-      const response = await page.request.get(`${testConfig.backend.url}/api/scan/test-scan-id/results`);
-      
+      const response = await page.request.get(
+        `${testConfig.backend.url}/api/scan/test-scan-id/results`
+      );
+
       // Should return 404 (scan not found) or 200 (if scan exists)
       expect([200, 404]).toContain(response.status());
-      
+
       if (response.status() === 200) {
         const data = await response.json();
         expect(data.scanId).toBeDefined();
@@ -276,16 +327,20 @@ test.describe('API Integration Tests', () => {
 
   test.describe('Report Download API', () => {
     test('should return 404 for non-existent scan report', async ({ page }) => {
-      const response = await page.request.get(`${testConfig.backend.url}/api/scan/non-existent-id/report/json`);
-      
+      const response = await page.request.get(
+        `${testConfig.backend.url}/api/scan/non-existent-id/report/json`
+      );
+
       expect(response.status()).toBe(404);
       const data = await response.json();
       expect(data.error.message).toMatch(/not found/i);
     });
 
     test('should validate report format parameter', async ({ page }) => {
-      const response = await page.request.get(`${testConfig.backend.url}/api/scan/test-id/report/invalid-format`);
-      
+      const response = await page.request.get(
+        `${testConfig.backend.url}/api/scan/test-id/report/invalid-format`
+      );
+
       expect([400, 404, 500]).toContain(response.status());
       const data = await response.json();
       expect(data.error.message).toMatch(/format|invalid|not found/i);
@@ -293,13 +348,15 @@ test.describe('API Integration Tests', () => {
 
     test('should accept valid report formats', async ({ page }) => {
       const formats = ['json', 'pdf'];
-      
+
       for (const format of formats) {
-        const response = await page.request.get(`${testConfig.backend.url}/api/scan/test-id/report/${format}`);
-        
+        const response = await page.request.get(
+          `${testConfig.backend.url}/api/scan/test-id/report/${format}`
+        );
+
         // Should return 404 (scan not found) rather than format error
         expect(response.status()).toBe(404);
-        
+
         if (response.status() !== 404) {
           // If scan existed, should return proper format
           const contentType = response.headers()['content-type'];
@@ -315,8 +372,10 @@ test.describe('API Integration Tests', () => {
 
   test.describe('Error Handling', () => {
     test('should handle 404 routes gracefully', async ({ page }) => {
-      const response = await page.request.get(`${testConfig.backend.url}/api/non-existent-endpoint`);
-      
+      const response = await page.request.get(
+        `${testConfig.backend.url}/api/non-existent-endpoint`
+      );
+
       expect(response.status()).toBe(404);
       const data = await response.json();
       expect(data.error).toBeDefined();
@@ -324,29 +383,37 @@ test.describe('API Integration Tests', () => {
     });
 
     test('should handle malformed JSON requests', async ({ page }) => {
-      const response = await page.request.post(`${testConfig.backend.url}/api/scan`, {
-        data: 'invalid json',
-        headers: {
-          'content-type': 'application/json'
+      const response = await page.request.post(
+        `${testConfig.backend.url}/api/scan`,
+        {
+          data: 'invalid json',
+          headers: {
+            'content-type': 'application/json',
+          },
         }
-      });
+      );
 
       expect([400, 500]).toContain(response.status());
     });
 
     test('should include proper CORS headers', async ({ page }) => {
       // Use GET request instead of OPTIONS since page.request.options might not be available
-      const response = await page.request.get(`${testConfig.backend.url}/api/health`);
-      
+      const response = await page.request.get(
+        `${testConfig.backend.url}/api/health`
+      );
+
       const corsHeaders = response.headers();
       expect(corsHeaders['access-control-allow-origin']).toBeDefined();
     });
 
     test('should handle request timeout gracefully', async ({ page }) => {
       // Test with a potentially slow endpoint
-      const response = await page.request.get(`${testConfig.backend.url}/api/health`, {
-        timeout: 1000 // 1 second timeout
-      });
+      const response = await page.request.get(
+        `${testConfig.backend.url}/api/health`,
+        {
+          timeout: 1000, // 1 second timeout
+        }
+      );
 
       // Should either respond quickly or timeout gracefully
       expect([200, 408]).toContain(response.status());
@@ -355,22 +422,29 @@ test.describe('API Integration Tests', () => {
 
   test.describe('Security Headers', () => {
     test('should include security headers', async ({ page }) => {
-      const response = await page.request.get(`${testConfig.backend.url}/api/health`);
-      
+      const response = await page.request.get(
+        `${testConfig.backend.url}/api/health`
+      );
+
       const headers = response.headers();
-      
+
       // Check for common security headers
-      expect(headers['x-frame-options'] || headers['x-content-type-options']).toBeDefined();
+      expect(
+        headers['x-frame-options'] || headers['x-content-type-options']
+      ).toBeDefined();
     });
 
     test('should validate content types', async ({ page }) => {
       // Send request with unexpected content type
-      const response = await page.request.post(`${testConfig.backend.url}/api/scan`, {
-        data: { test: 'data' },
-        headers: {
-          'content-type': 'text/plain'
+      const response = await page.request.post(
+        `${testConfig.backend.url}/api/scan`,
+        {
+          data: { test: 'data' },
+          headers: {
+            'content-type': 'text/plain',
+          },
         }
-      });
+      );
 
       // Should handle content type validation (could be 400, 415, or 500)
       expect([400, 415, 500]).toContain(response.status());
@@ -380,18 +454,16 @@ test.describe('API Integration Tests', () => {
   test.describe('Rate Limiting', () => {
     test('should handle multiple rapid requests', async ({ page }) => {
       const requests = [];
-      
+
       // Send multiple rapid requests
       for (let i = 0; i < 5; i++) {
-        requests.push(
-          page.request.get(`${testConfig.backend.url}/api/health`)
-        );
+        requests.push(page.request.get(`${testConfig.backend.url}/api/health`));
       }
-      
+
       const responses = await Promise.all(requests);
-      
+
       // Most should succeed, some might be rate limited
-      const successCount = responses.filter(r => r.status() === 200).length;
+      const successCount = responses.filter((r) => r.status() === 200).length;
       expect(successCount).toBeGreaterThan(0);
     });
   });
@@ -400,10 +472,13 @@ test.describe('API Integration Tests', () => {
     test('should provide WebSocket endpoint information', async ({ page }) => {
       // This would test WebSocket connection if scan was started
       // For now, just verify the health endpoint mentions WebSocket capability
-      
-      const response = await verifyApiEndpoint(page, `${testConfig.backend.url}/api/health`);
+
+      const response = await verifyApiEndpoint(
+        page,
+        `${testConfig.backend.url}/api/health`
+      );
       expect(response.status()).toBe(200);
-      
+
       // WebSocket server should be available (tested indirectly)
       // Direct WebSocket testing would require more complex setup
     });
@@ -421,7 +496,7 @@ test.describe('API Integration Tests', () => {
       for (const testCase of testCases) {
         let response;
         const fullUrl = `${testConfig.backend.url}${testCase.url}`;
-        
+
         if (testCase.method === 'GET') {
           response = await page.request.get(fullUrl);
         } else if (testCase.method === 'POST') {
@@ -433,8 +508,10 @@ test.describe('API Integration Tests', () => {
     });
 
     test('should return proper content types', async ({ page }) => {
-      const response = await page.request.get(`${testConfig.backend.url}/api/health`);
-      
+      const response = await page.request.get(
+        `${testConfig.backend.url}/api/health`
+      );
+
       expect(response.status()).toBe(200);
       expect(response.headers()['content-type']).toMatch(/application\/json/);
     });

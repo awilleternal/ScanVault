@@ -36,9 +36,6 @@
 ## M2 — Mocked Scan Flow
 
 - [x] 5. Build scanner selection UI
-
-
-
   - Create ScannerSelectionComponent with tool checkboxes
   - Add validation to ensure at least one tool is selected
   - Show tool availability status (available/unavailable)

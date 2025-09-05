@@ -80,7 +80,10 @@ describe('ReportGeneratorService', () => {
 
       fs.writeFile.mockResolvedValue();
 
-      const result = await reportGenerator.generateJSONReport(mockScanResults, scanMetadata);
+      const result = await reportGenerator.generateJSONReport(
+        mockScanResults,
+        scanMetadata
+      );
 
       expect(result).toHaveProperty('filePath');
       expect(result).toHaveProperty('fileName');
@@ -149,8 +152,9 @@ describe('ReportGeneratorService', () => {
 
       fs.writeFile.mockRejectedValue(new Error('Write failed'));
 
-      await expect(reportGenerator.generateJSONReport(mockScanResults, scanMetadata))
-        .rejects.toThrow('Failed to generate JSON report');
+      await expect(
+        reportGenerator.generateJSONReport(mockScanResults, scanMetadata)
+      ).rejects.toThrow('Failed to generate JSON report');
     });
   });
 
@@ -178,7 +182,10 @@ describe('ReportGeneratorService', () => {
         endTime: new Date('2024-01-15T10:05:00Z'),
       };
 
-      const result = await reportGenerator.generatePDFReport(mockScanResults, scanMetadata);
+      const result = await reportGenerator.generatePDFReport(
+        mockScanResults,
+        scanMetadata
+      );
 
       expect(result).toHaveProperty('filePath');
       expect(result).toHaveProperty('fileName');
@@ -218,7 +225,7 @@ describe('ReportGeneratorService', () => {
       await reportGenerator.generatePDFReport(mockScanResults, scanMetadata);
 
       const htmlContent = mockPage.setContent.mock.calls[0][0];
-      
+
       expect(htmlContent).toContain('Security Scan Report');
       expect(htmlContent).toContain('Executive Summary');
       expect(htmlContent).toContain('Total Issues: 3');
@@ -238,8 +245,9 @@ describe('ReportGeneratorService', () => {
         endTime: new Date(),
       };
 
-      await expect(reportGenerator.generatePDFReport(mockScanResults, scanMetadata))
-        .rejects.toThrow('Failed to generate PDF report');
+      await expect(
+        reportGenerator.generatePDFReport(mockScanResults, scanMetadata)
+      ).rejects.toThrow('Failed to generate PDF report');
     });
 
     test('should clean up browser on error', async () => {
@@ -263,8 +271,9 @@ describe('ReportGeneratorService', () => {
         endTime: new Date(),
       };
 
-      await expect(reportGenerator.generatePDFReport(mockScanResults, scanMetadata))
-        .rejects.toThrow('Failed to generate PDF report');
+      await expect(
+        reportGenerator.generatePDFReport(mockScanResults, scanMetadata)
+      ).rejects.toThrow('Failed to generate PDF report');
 
       expect(mockBrowser.close).toHaveBeenCalled();
     });
@@ -293,15 +302,19 @@ describe('ReportGeneratorService', () => {
       const summary = reportGenerator.generateExecutiveSummary(mockScanResults);
 
       // Risk score calculation: CRITICAL=10, HIGH=7, MEDIUM=4, LOW=1
-      const expectedRiskScore = (1 * 10) + (1 * 7) + (1 * 4); // 21
+      const expectedRiskScore = 1 * 10 + 1 * 7 + 1 * 4; // 21
       expect(summary.riskScore).toBe(expectedRiskScore);
     });
 
     test('should provide appropriate recommendations', () => {
       const summary = reportGenerator.generateExecutiveSummary(mockScanResults);
 
-      expect(summary.recommendations).toContain('Address critical security issues immediately');
-      expect(summary.recommendations).toContain('Review and fix high-severity vulnerabilities');
+      expect(summary.recommendations).toContain(
+        'Address critical security issues immediately'
+      );
+      expect(summary.recommendations).toContain(
+        'Review and fix high-severity vulnerabilities'
+      );
     });
 
     test('should handle empty results', () => {
@@ -323,7 +336,10 @@ describe('ReportGeneratorService', () => {
         endTime: new Date('2024-01-15T10:05:00Z'),
       };
 
-      const html = reportGenerator.generateHTMLContent(mockScanResults, scanMetadata);
+      const html = reportGenerator.generateHTMLContent(
+        mockScanResults,
+        scanMetadata
+      );
 
       expect(html).toContain('<!DOCTYPE html>');
       expect(html).toContain('<html>');
@@ -341,7 +357,10 @@ describe('ReportGeneratorService', () => {
         endTime: new Date(),
       };
 
-      const html = reportGenerator.generateHTMLContent(mockScanResults, scanMetadata);
+      const html = reportGenerator.generateHTMLContent(
+        mockScanResults,
+        scanMetadata
+      );
 
       expect(html).toContain('<style>');
       expect(html).toContain('body {');
@@ -357,7 +376,10 @@ describe('ReportGeneratorService', () => {
         endTime: new Date(),
       };
 
-      const html = reportGenerator.generateHTMLContent(mockScanResults, scanMetadata);
+      const html = reportGenerator.generateHTMLContent(
+        mockScanResults,
+        scanMetadata
+      );
 
       expect(html).toContain('SQL Injection');
       expect(html).toContain('src/database/queries.js:42');
@@ -369,8 +391,8 @@ describe('ReportGeneratorService', () => {
 
   describe('cleanupOldReports', () => {
     test('should remove reports older than retention period', async () => {
-      const oldTime = Date.now() - (8 * 24 * 60 * 60 * 1000); // 8 days ago
-      
+      const oldTime = Date.now() - 8 * 24 * 60 * 60 * 1000; // 8 days ago
+
       fs.readdir.mockResolvedValue([
         { name: 'old-report.json', isFile: () => true },
         { name: 'new-report.json', isFile: () => true },
@@ -401,8 +423,8 @@ describe('ReportGeneratorService', () => {
         { name: 'other-file.txt', isFile: () => true },
       ]);
 
-      fs.stat.mockResolvedValue({ 
-        mtimeMs: Date.now() - (8 * 24 * 60 * 60 * 1000) 
+      fs.stat.mockResolvedValue({
+        mtimeMs: Date.now() - 8 * 24 * 60 * 60 * 1000,
       });
 
       fs.unlink.mockResolvedValue();

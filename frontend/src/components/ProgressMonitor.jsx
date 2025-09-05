@@ -9,7 +9,12 @@ import { useEffect, useRef } from 'react';
  * @param {number} [props.discoveredCount] - Number of vulnerabilities discovered so far
  * @returns {JSX.Element}
  */
-function ProgressMonitor({ currentTool, progressPercent, logs, discoveredCount = 0 }) {
+function ProgressMonitor({
+  currentTool,
+  progressPercent,
+  logs,
+  discoveredCount = 0,
+}) {
   const logsEndRef = useRef(null);
 
   // Auto-scroll to bottom when new logs are added
@@ -51,7 +56,9 @@ function ProgressMonitor({ currentTool, progressPercent, logs, discoveredCount =
               Security Scan in Progress
             </h3>
             <p className="text-sm text-gray-600 mt-1">
-              {currentTool ? `Running ${currentTool}...` : 'Initializing scan...'}
+              {currentTool
+                ? `Running ${currentTool}...`
+                : 'Initializing scan...'}
             </p>
           </div>
           <div className="text-right">
@@ -162,9 +169,7 @@ function ProgressMonitor({ currentTool, progressPercent, logs, discoveredCount =
         <div className="card bg-gray-50 border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">
-                Files Scanned
-              </p>
+              <p className="text-sm font-medium text-gray-900">Files Scanned</p>
               <p className="text-2xl font-semibold text-gray-700">
                 {Math.floor(progressPercent / 10) || '---'}
               </p>
@@ -185,13 +190,19 @@ function ProgressMonitor({ currentTool, progressPercent, logs, discoveredCount =
           </div>
         </div>
 
-        <div className={`card ${discoveredCount > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}>
+        <div
+          className={`card ${discoveredCount > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}
+        >
           <div className="flex items-center justify-between">
             <div>
-              <p className={`text-sm font-medium ${discoveredCount > 0 ? 'text-red-900' : 'text-gray-900'}`}>
+              <p
+                className={`text-sm font-medium ${discoveredCount > 0 ? 'text-red-900' : 'text-gray-900'}`}
+              >
                 Vulnerabilities Found
               </p>
-              <p className={`text-2xl font-semibold ${discoveredCount > 0 ? 'text-red-700' : 'text-gray-700'}`}>
+              <p
+                className={`text-2xl font-semibold ${discoveredCount > 0 ? 'text-red-700' : 'text-gray-700'}`}
+              >
                 {discoveredCount}
               </p>
             </div>

@@ -46,36 +46,43 @@ export class ODCBridge {
    * @returns {Promise<Array>} Scan results
    */
   async runODC(targetPath) {
-    if (!await this.isAvailable()) {
+    if (!(await this.isAvailable())) {
       throw new Error('ODC is not available');
     }
 
     try {
       console.log(`ODC scanning target path: ${targetPath}`);
-      
+
       // Validate target path exists
       if (!fs.existsSync(targetPath)) {
         throw new Error(`Target path does not exist: ${targetPath}`);
       }
-      
+
       // Create temporary output directory
-      const tempDir = path.join(process.env.TEMP || 'temp', `odc-${Date.now()}`);
+      const tempDir = path.join(
+        process.env.TEMP || 'temp',
+        `odc-${Date.now()}`
+      );
       if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
       }
-      
+
       console.log(`ODC output directory: ${tempDir}`);
 
       // Build ODC command
       const projectName = path.basename(targetPath) || 'SecurityScan';
       const args = [
-        '--project', projectName,
-        '--scan', targetPath,
-        '--out', tempDir,
-        '--format', 'JSON',
-        '--enableRetired'
+        '--project',
+        projectName,
+        '--scan',
+        targetPath,
+        '--out',
+        tempDir,
+        '--format',
+        'JSON',
+        '--enableRetired',
       ];
-      
+
       console.log(`ODC command args: ${args.join(' ')}`);
 
       // Add NVD API key if available (like your WSL2 pattern)
@@ -84,10 +91,10 @@ export class ODCBridge {
       }
 
       await this.executeCommand(this.odcPath, args);
-      
+
       // Parse ODC JSON output
       const results = this.parseODCOutput(tempDir);
-      
+
       // Clean up temp directory
       try {
         if (fs.existsSync(tempDir)) {
@@ -96,7 +103,7 @@ export class ODCBridge {
       } catch (cleanupError) {
         console.error('Failed to cleanup temp directory:', cleanupError);
       }
-      
+
       return results;
     } catch (error) {
       console.error('ODC execution failed:', error);
@@ -144,9 +151,9 @@ export class ODCBridge {
 
       process.on('close', (code) => {
         clearTimeout(timeoutId);
-        
+
         if (timedOut) return;
-        
+
         if (code === 0) {
           resolve(output);
         } else {
@@ -154,7 +161,9 @@ export class ODCBridge {
           if (output) {
             resolve(output);
           } else {
-            reject(new Error(`Command failed with code ${code}: ${errorOutput}`));
+            reject(
+              new Error(`Command failed with code ${code}: ${errorOutput}`)
+            );
           }
         }
       });
@@ -169,7 +178,7 @@ export class ODCBridge {
   parseODCOutput(outputDir) {
     try {
       const jsonFile = path.join(outputDir, 'dependency-check-report.json');
-      
+
       if (!fs.existsSync(jsonFile)) {
         console.warn('ODC JSON report not found');
         return [];
@@ -179,9 +188,9 @@ export class ODCBridge {
       const results = [];
 
       if (data.dependencies) {
-        data.dependencies.forEach(dependency => {
+        data.dependencies.forEach((dependency) => {
           if (dependency.vulnerabilities) {
-            dependency.vulnerabilities.forEach(vuln => {
+            dependency.vulnerabilities.forEach((vuln) => {
               results.push({
                 id: vuln.name || uuidv4(),
                 tool: 'OWASP Dependency Check', // Exact match to existing mock
@@ -191,7 +200,8 @@ export class ODCBridge {
                 line: 0, // ODC doesn't provide line numbers (like Trivy)
                 description: vuln.description || vuln.name,
                 fix: this.generateODCFix(dependency, vuln),
-                references: vuln.references?.map(ref => ref.url || ref.name) || [],
+                references:
+                  vuln.references?.map((ref) => ref.url || ref.name) || [],
               });
             });
           }
@@ -212,16 +222,16 @@ export class ODCBridge {
    */
   mapODCSeverity(severity) {
     if (!severity) return 'LOW';
-    
+
     const severityMap = {
-      'CRITICAL': 'CRITICAL',
-      'HIGH': 'HIGH',
-      'MEDIUM': 'MEDIUM', 
-      'LOW': 'LOW',
-      'INFO': 'LOW',
-      'INFORMATIONAL': 'LOW'
+      CRITICAL: 'CRITICAL',
+      HIGH: 'HIGH',
+      MEDIUM: 'MEDIUM',
+      LOW: 'LOW',
+      INFO: 'LOW',
+      INFORMATIONAL: 'LOW',
     };
-    
+
     return severityMap[severity.toUpperCase()] || 'LOW';
   }
 

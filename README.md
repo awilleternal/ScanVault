@@ -5,7 +5,7 @@
 ## 🚀 Features
 
 - **Multiple Upload Options**: Drag-and-drop ZIP files or provide repository URLs
-- **Security Tools Integration**: 
+- **Security Tools Integration**:
   - Semgrep (via WSL2) - Static analysis for security issues
   - Trivy (via WSL2) - Comprehensive vulnerability scanner
   - OWASP Dependency Check (Windows native) - Dependency vulnerability detection
@@ -25,17 +25,20 @@
 ## 🛠️ Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd scanvault
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Set up environment variables:
+
 ```bash
 # Backend configuration
 cd backend
@@ -46,11 +49,13 @@ cp .env.example .env
 ## 🚀 Development
 
 Run both frontend and backend in development mode:
+
 ```bash
 npm run dev
 ```
 
 Or run them separately:
+
 ```bash
 # Frontend only (port 3000)
 npm run dev:frontend
@@ -86,11 +91,13 @@ npm run dev:backend
 ## 🧪 Testing
 
 Run all tests:
+
 ```bash
 npm test
 ```
 
 Run specific test suites:
+
 ```bash
 # Unit tests with coverage
 npm run test:frontend
@@ -103,6 +110,7 @@ npm run test:e2e
 ## 📦 Building for Production
 
 Build both frontend and backend:
+
 ```bash
 npm run build
 ```
@@ -125,6 +133,7 @@ npm run build
 ## 📝 Environment Variables
 
 ### Backend (.env)
+
 ```bash
 # Server Configuration
 NODE_ENV=development
@@ -147,9 +156,11 @@ ODC_NVD_API_KEY=77371f4a-8f08-4ea9-9217-aef9933d3ec4        # Optional: NVD API 
 ## 🐛 Troubleshooting
 
 ### WSL2 Not Available
+
 If WSL2 is not available on your system, the app will automatically disable Semgrep and Trivy options. Only OWASP Dependency Check will be available on Windows.
 
 ### OWASP Dependency Check Setup
+
 1. Download ODC from: https://owasp.org/www-project-dependency-check/
 2. Extract the ZIP file to a location on your computer (e.g., `C:\tools\dependency-check`)
 3. Add the `bin` directory to your Windows PATH environment variable, OR
@@ -158,7 +169,9 @@ If WSL2 is not available on your system, the app will automatically disable Semg
 6. Optional: Get a free NVD API key from https://nvd.nist.gov/developers/request-an-api-key for faster scans
 
 ### Port Already in Use
+
 If ports 3000 or 5000 are already in use, you can change them in:
+
 - Frontend: `frontend/vite.config.js`
 - Backend: `.env` file
 

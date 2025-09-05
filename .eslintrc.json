@@ -5,17 +5,12 @@
     "es2022": true,
     "node": true
   },
-  "extends": [
-    "eslint:recommended",
-    "plugin:security/recommended"
-  ],
+  "extends": ["eslint:recommended", "plugin:security/recommended"],
   "parserOptions": {
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
-  "plugins": [
-    "security"
-  ],
+  "plugins": ["security"],
   "rules": {
     "no-console": ["warn", { "allow": ["warn", "error"] }],
     "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
@@ -31,9 +26,5 @@
     "arrow-body-style": ["error", "as-needed"],
     "object-shorthand": "error"
   },
-  "ignorePatterns": [
-    "dist",
-    "node_modules",
-    "*.config.js"
-  ]
+  "ignorePatterns": ["dist", "node_modules", "*.config.js"]
 }

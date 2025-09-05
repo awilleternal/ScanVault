@@ -17,14 +17,14 @@ describe('ODCBridge', () => {
     it('should return false on non-Windows platforms', async () => {
       const originalPlatform = process.platform;
       Object.defineProperty(process, 'platform', {
-        value: 'linux'
+        value: 'linux',
       });
-      
+
       const result = await odcBridge.isAvailable();
       expect(result).toBe(false);
-      
+
       Object.defineProperty(process, 'platform', {
-        value: originalPlatform
+        value: originalPlatform,
       });
     });
   });
@@ -46,7 +46,7 @@ describe('ODCBridge', () => {
     it('should generate appropriate fix suggestions', () => {
       const dependency = { fileName: 'lodash-4.17.11.jar' };
       const vuln = { name: 'CVE-2020-8203' };
-      
+
       const fix = odcBridge.generateODCFix(dependency, vuln);
       expect(fix).toContain('lodash-4.17.11.jar');
       expect(fix).toContain('CVE-2020-8203');

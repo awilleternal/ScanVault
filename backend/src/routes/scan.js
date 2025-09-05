@@ -24,7 +24,11 @@ router.post('/', async (req, res, next) => {
       });
     }
 
-    if (!selectedTools || !Array.isArray(selectedTools) || selectedTools.length === 0) {
+    if (
+      !selectedTools ||
+      !Array.isArray(selectedTools) ||
+      selectedTools.length === 0
+    ) {
       return res.status(400).json({
         error: {
           message: 'At least one scanning tool must be selected',
@@ -61,21 +65,24 @@ router.post('/', async (req, res, next) => {
     });
 
     // Start scan in background
-    orchestrator.startScan(actualTargetId, selectedTools).then((results) => {
-      const session = scanSessions.get(scanId);
-      if (session) {
-        session.status = 'completed';
-        session.endTime = new Date();
-        session.results = results;
-      }
-    }).catch((error) => {
-      const session = scanSessions.get(scanId);
-      if (session) {
-        session.status = 'failed';
-        session.endTime = new Date();
-        session.error = error.message;
-      }
-    });
+    orchestrator
+      .startScan(actualTargetId, selectedTools)
+      .then((results) => {
+        const session = scanSessions.get(scanId);
+        if (session) {
+          session.status = 'completed';
+          session.endTime = new Date();
+          session.results = results;
+        }
+      })
+      .catch((error) => {
+        const session = scanSessions.get(scanId);
+        if (session) {
+          session.status = 'failed';
+          session.endTime = new Date();
+          session.error = error.message;
+        }
+      });
 
     res.json({
       scanId,
@@ -146,7 +153,9 @@ router.get('/:scanId/report/:format', async (req, res, next) => {
     }
 
     // Import report generator
-    const { ReportGeneratorService } = await import('../services/reportGenerator.js');
+    const { ReportGeneratorService } = await import(
+      '../services/reportGenerator.js'
+    );
     const reportGenerator = new ReportGeneratorService();
 
     if (format === 'json') {
@@ -158,7 +167,10 @@ router.get('/:scanId/report/:format', async (req, res, next) => {
 
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Content-Length', buffer.length);
-        res.setHeader('Content-Disposition', `attachment; filename="security-scan-${scanId}.json"`);
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="security-scan-${scanId}.json"`
+        );
         res.setHeader('Cache-Control', 'no-cache');
         res.send(buffer);
       } catch (jsonError) {
@@ -177,7 +189,10 @@ router.get('/:scanId/report/:format', async (req, res, next) => {
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Length', pdfBuffer.length);
-        res.setHeader('Content-Disposition', `attachment; filename="security-scan-${scanId}.pdf"`);
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="security-scan-${scanId}.pdf"`
+        );
         res.setHeader('Cache-Control', 'no-cache');
         res.send(pdfBuffer);
       } catch (pdfError) {

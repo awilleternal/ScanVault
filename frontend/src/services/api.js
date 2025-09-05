@@ -11,17 +11,14 @@ const api = axios.create({
 
 // Request interceptor for auth tokens or other headers
 api.interceptors.request.use(
-  (config) => {
+  (config) =>
     // Add auth token if available
     // const token = localStorage.getItem('authToken');
     // if (token) {
     //   config.headers.Authorization = `Bearer ${token}`;
     // }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
+    config,
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor for error handling
@@ -30,7 +27,8 @@ api.interceptors.response.use(
   (error) => {
     if (error.response) {
       // Server responded with error status
-      const message = error.response.data?.error?.message || 'An error occurred';
+      const message =
+        error.response.data?.error?.message || 'An error occurred';
       throw new Error(message);
     } else if (error.request) {
       // Request made but no response
@@ -77,7 +75,7 @@ export const uploadFile = async (file, onProgress) => {
  */
 export const uploadFolder = async (files, onProgress) => {
   const formData = new FormData();
-  
+
   // Add all files to form data preserving their structure
   Array.from(files).forEach((file) => {
     // Just append the file directly - multer will handle the originalname
@@ -157,15 +155,15 @@ export const downloadReport = async (scanId, format) => {
     const response = await axios.get(`/api/scan/${scanId}/report/${format}`, {
       responseType: 'blob',
     });
-    
+
     // Create download link - response.data is the actual Blob
     const blob = response.data;
-    
+
     // Verify we have a valid blob
     if (!(blob instanceof Blob)) {
       throw new Error('Response is not a valid blob');
     }
-    
+
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -177,12 +175,14 @@ export const downloadReport = async (scanId, format) => {
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
-    
+
     return blob;
   } catch (error) {
     console.error('Download failed:', error);
     // Re-throw with more context for frontend error handling
-    throw new Error(`Failed to download ${format.toUpperCase()} report: ${error.response?.data?.error?.message || error.message}`);
+    throw new Error(
+      `Failed to download ${format.toUpperCase()} report: ${error.response?.data?.error?.message || error.message}`
+    );
   }
 };
 

@@ -9,25 +9,32 @@ import toast from 'react-hot-toast';
  * @param {Function} props.onStart - Callback to start scanning
  * @returns {JSX.Element}
  */
-function ScannerSelection({ availableTools, selectedTools: initialSelected, onStart }) {
+function ScannerSelection({
+  availableTools,
+  selectedTools: initialSelected,
+  onStart,
+}) {
   const [selectedTools, setSelectedTools] = useState(initialSelected);
 
   // Tool descriptions
   const toolInfo = {
-    'Semgrep': {
-      description: 'Static analysis tool for finding bugs, security issues, and anti-patterns',
+    Semgrep: {
+      description:
+        'Static analysis tool for finding bugs, security issues, and anti-patterns',
       icon: '🔍',
       estimatedTime: '2-5 minutes',
       requirements: 'Requires WSL2 on Windows',
     },
-    'Trivy': {
-      description: 'Comprehensive vulnerability scanner for containers and other artifacts',
+    Trivy: {
+      description:
+        'Comprehensive vulnerability scanner for containers and other artifacts',
       icon: '🛡️',
       estimatedTime: '1-3 minutes',
       requirements: 'Requires WSL2 on Windows',
     },
     'OWASP Dependency Check': {
-      description: 'Identifies project dependencies and checks for known vulnerabilities',
+      description:
+        'Identifies project dependencies and checks for known vulnerabilities',
       icon: '📦',
       estimatedTime: '3-7 minutes',
       requirements: 'Windows only (optional)',
@@ -76,7 +83,9 @@ function ScannerSelection({ availableTools, selectedTools: initialSelected, onSt
     <div>
       {/* Quick actions */}
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-medium text-gray-900">Available Security Tools</h3>
+        <h3 className="text-lg font-medium text-gray-900">
+          Available Security Tools
+        </h3>
         <div className="space-x-2">
           <button
             type="button"
@@ -101,7 +110,7 @@ function ScannerSelection({ availableTools, selectedTools: initialSelected, onSt
         {availableTools.map((tool) => {
           const info = toolInfo[tool];
           const isSelected = selectedTools.includes(tool);
-          
+
           return (
             <div
               key={tool}
@@ -151,11 +160,10 @@ function ScannerSelection({ availableTools, selectedTools: initialSelected, onSt
               Selected tools: {selectedTools.length}
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              Estimated total time: {
-                selectedTools.length === 0
-                  ? '0 minutes'
-                  : `${selectedTools.length * 2}-${selectedTools.length * 5} minutes`
-              }
+              Estimated total time:{' '}
+              {selectedTools.length === 0
+                ? '0 minutes'
+                : `${selectedTools.length * 2}-${selectedTools.length * 5} minutes`}
             </p>
           </div>
           <button
@@ -166,7 +174,7 @@ function ScannerSelection({ availableTools, selectedTools: initialSelected, onSt
             Start Security Scan
           </button>
         </div>
-        
+
         {selectedTools.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {selectedTools.map((tool) => (

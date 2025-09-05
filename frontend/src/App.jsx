@@ -1,9 +1,15 @@
-import { useState, useEffect } from 'react';
-import { Toaster } from 'react-hot-toast';
+import { useState } from 'react';
+// eslint-disable-next-line no-unused-vars
+import { Toaster, toast } from 'react-hot-toast';
+// eslint-disable-next-line no-unused-vars
 import UploadComponent from './components/UploadComponent';
+// eslint-disable-next-line no-unused-vars
 import ScannerSelection from './components/ScannerSelection';
+// eslint-disable-next-line no-unused-vars
 import ProgressMonitor from './components/ProgressMonitor';
+// eslint-disable-next-line no-unused-vars
 import ResultsDashboard from './components/ResultsDashboard';
+// eslint-disable-next-line no-unused-vars
 import LiveVulnerabilityFeed from './components/LiveVulnerabilityFeed';
 import { WebSocketService } from './services/websocket';
 import { startScan, getScanResults, downloadReport } from './services/api';
@@ -25,7 +31,9 @@ function App() {
   });
 
   // New state for real-time vulnerability discovery
-  const [discoveredVulnerabilities, setDiscoveredVulnerabilities] = useState([]);
+  const [discoveredVulnerabilities, setDiscoveredVulnerabilities] = useState(
+    []
+  );
   const [latestVulnerability, setLatestVulnerability] = useState(null);
 
   /**
@@ -44,40 +52,43 @@ function App() {
   const handleStartScan = async (selectedTools) => {
     try {
       setScanStatus('scanning');
-      
+
       // Reset vulnerability state for new scan
       setDiscoveredVulnerabilities([]);
       setLatestVulnerability(null);
-      
+
       // Start the scan
       const scanResponse = await startScan(uploadedFile.id, selectedTools);
       setCurrentScanId(scanResponse.scanId);
-      
+
       // Connect to WebSocket for progress updates
       const wsService = new WebSocketService();
-      
+
       // Fallback simulation if WebSocket fails
       let fallbackTimeout;
       const simulateProgress = () => {
         let progress = 0;
         const tools = selectedTools;
         let currentToolIndex = 0;
-        
+
         const interval = setInterval(() => {
           progress += 15;
           const currentTool = tools[currentToolIndex] || 'Scanning';
-          
+
           setScanProgress({
             currentTool,
             progressPercent: Math.min(progress, 100),
-            logs: [...scanProgress.logs, `${currentTool} scanning... ${Math.min(progress, 100)}%`],
+            logs: [
+              ...scanProgress.logs,
+              `${currentTool} scanning... ${Math.min(progress, 100)}%`,
+            ],
           });
-          
+
           if (progress >= 50 && currentToolIndex < tools.length - 1) {
             currentToolIndex++;
             progress = 50;
           }
-          
+
           if (progress >= 100) {
             clearInterval(interval);
             // Wait for actual results from backend, then fetch them automatically
@@ -94,10 +105,10 @@ function App() {
             }, 2000);
           }
         }, 800);
-        
+
         return interval;
       };
-      
+
       wsService.connect(scanResponse.scanId, {
         onProgress: (data) => {
           if (fallbackTimeout) {
@@ -110,24 +121,27 @@ function App() {
             logs: [...scanProgress.logs, data.message],
           });
         },
-        
+
         // NEW: Handle real-time vulnerability discovery
         onVulnerability: (data) => {
           console.log('New vulnerability discovered:', data.vulnerability);
-          
+
           // Add to discovered vulnerabilities list
-          setDiscoveredVulnerabilities(prev => [...prev, data.vulnerability]);
-          
+          setDiscoveredVulnerabilities((prev) => [...prev, data.vulnerability]);
+
           // Set as latest for animation
           setLatestVulnerability(data.vulnerability);
-          
+
           // Update logs with vulnerability discovery
-          setScanProgress(prev => ({
+          setScanProgress((prev) => ({
             ...prev,
-            logs: [...prev.logs, `🚨 Found ${data.vulnerability.severity} vulnerability: ${data.vulnerability.type} in ${data.vulnerability.file}`],
+            logs: [
+              ...prev.logs,
+              `🚨 Found ${data.vulnerability.severity} vulnerability: ${data.vulnerability.type} in ${data.vulnerability.file}`,
+            ],
           }));
         },
-        
+
         onComplete: async () => {
           // Get final results
           try {
@@ -154,7 +168,6 @@ function App() {
           }
         },
       });
-      
     } catch (error) {
       console.error('Failed to start scan:', error);
       setScanStatus('selecting');
@@ -181,35 +194,68 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-right" />
-      
+
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <div className="flex items-center">
-                <svg className="w-8 h-8 text-primary-600 mr-3" fill="currentColor" viewBox="0 0 32 32">
+                <svg
+                  className="w-8 h-8 text-primary-600 mr-3"
+                  fill="currentColor"
+                  viewBox="0 0 32 32"
+                >
                   <defs>
-                    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" style={{stopColor: 'currentColor', stopOpacity: 1}} />
-                      <stop offset="100%" style={{stopColor: 'currentColor', stopOpacity: 0.8}} />
+                    <linearGradient
+                      id="headerGrad"
+                      x1="0%"
+                      y1="0%"
+                      x2="100%"
+                      y2="100%"
+                    >
+                      <stop
+                        offset="0%"
+                        style={{ stopColor: 'currentColor', stopOpacity: 1 }}
+                      />
+                      <stop
+                        offset="100%"
+                        style={{ stopColor: 'currentColor', stopOpacity: 0.8 }}
+                      />
                     </linearGradient>
                   </defs>
-                  <path d="M16 2l-12 4v8c0 8 12 16 12 16s12-8 12-16V6l-12-4z" fill="url(#headerGrad)"/>
-                  <circle cx="16" cy="16" r="4" fill="none" stroke="white" strokeWidth="1.5"/>
-                  <path d="M14 16l2 2 4-4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path
+                    d="M16 2l-12 4v8c0 8 12 16 12 16s12-8 12-16V6l-12-4z"
+                    fill="url(#headerGrad)"
+                  />
+                  <circle
+                    cx="16"
+                    cy="16"
+                    r="4"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="1.5"
+                  />
+                  <path
+                    d="M14 16l2 2 4-4"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900 leading-tight">ScanVault</h1>
-                  <p className="text-xs text-primary-600 font-medium -mt-1">Security Intelligence Platform</p>
+                  <h1 className="text-xl font-bold text-gray-900 leading-tight">
+                    ScanVault
+                  </h1>
+                  <p className="text-xs text-primary-600 font-medium -mt-1">
+                    Security Intelligence Platform
+                  </p>
                 </div>
               </div>
             </div>
             {scanStatus !== 'idle' && (
-              <button
-                onClick={handleNewScan}
-                className="btn btn-secondary"
-              >
+              <button onClick={handleNewScan} className="btn btn-secondary">
                 New Scan
               </button>
             )}
@@ -226,7 +272,8 @@ function App() {
                 Advanced Security Scanning
               </h2>
               <p className="text-lg text-gray-600">
-                Upload plugins, repositories, or applications for comprehensive vulnerability analysis
+                Upload plugins, repositories, or applications for comprehensive
+                vulnerability analysis
               </p>
             </div>
             <UploadComponent
@@ -240,9 +287,14 @@ function App() {
         {scanStatus === 'selecting' && uploadedFile && (
           <div className="max-w-2xl mx-auto">
             <div className="mb-6">
-              <h2 className="text-xl font-semibold mb-2">Select Security Scanners</h2>
+              <h2 className="text-xl font-semibold mb-2">
+                Select Security Scanners
+              </h2>
               <p className="text-gray-600">
-                Choose which security tools to run on: <span className="font-medium">{uploadedFile.fileName || uploadedFile.repositoryUrl}</span>
+                Choose which security tools to run on:{' '}
+                <span className="font-medium">
+                  {uploadedFile.fileName || uploadedFile.repositoryUrl}
+                </span>
               </p>
             </div>
             <ScannerSelection
@@ -284,12 +336,12 @@ function App() {
                   // Could add a success toast here if desired
                 } else {
                   console.error('No scan ID available for download');
-                  alert('Error: No scan ID available for download');
+                  toast.error('Error: No scan ID available for download');
                 }
               } catch (error) {
                 console.error('Download failed:', error);
                 // Show user-friendly error message
-                alert(`Download failed: ${error.message}`);
+                toast.error(`Download failed: ${error.message}`);
               }
             }}
           />

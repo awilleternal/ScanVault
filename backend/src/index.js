@@ -47,21 +47,25 @@ const wss = new WebSocketServer({ server });
 const wsClients = new Map();
 
 // Configure middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+      },
     },
-  },
-}));
+  })
+);
 
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true,
+  })
+);
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -91,26 +95,28 @@ wss.on('connection', (ws, req) => {
   // Extract scanId from URL path like /ws/scanId
   const urlParts = req.url.split('/');
   const scanId = urlParts[urlParts.length - 1];
-  
+
   logger.info(`WebSocket client connected for scan: ${scanId}`);
-  
+
   wsClients.set(scanId, ws);
-  
+
   ws.on('close', () => {
     logger.info(`WebSocket client disconnected for scan: ${scanId}`);
     wsClients.delete(scanId);
   });
-  
+
   ws.on('error', (error) => {
     logger.error(`WebSocket error for scan ${scanId}:`, error);
   });
-  
+
   // Send connection confirmation
-  ws.send(JSON.stringify({
-    type: 'connected',
-    scanId: scanId,
-    timestamp: new Date().toISOString()
-  }));
+  ws.send(
+    JSON.stringify({
+      type: 'connected',
+      scanId: scanId,
+      timestamp: new Date().toISOString(),
+    })
+  );
 });
 
 // Make WebSocket clients available to scan orchestrator
@@ -119,10 +125,10 @@ app.locals.wsClients = wsClients;
 // Error handling middleware
 app.use((err, req, res, next) => {
   logger.error('Unhandled error:', err);
-  
+
   // Don't leak error details in production
   const isDevelopment = process.env.NODE_ENV === 'development';
-  
+
   res.status(err.status || 500).json({
     error: {
       message: err.message || 'Internal server error',

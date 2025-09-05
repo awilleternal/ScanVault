@@ -28,17 +28,18 @@ export class WSL2Bridge {
     }
 
     try {
-      const { stdout } = await execPromise('wsl --status', { 
+      const { stdout } = await execPromise('wsl --status', {
         timeout: 5000,
-        encoding: 'utf8' 
+        encoding: 'utf8',
       });
       // Clean up the output (remove null bytes and normalize)
       const cleanOutput = stdout.replace(/\0/g, '').trim();
       console.log('WSL status output:', cleanOutput);
-      
-      this.isWSL2Available = cleanOutput.includes('Version: 2') || 
-                           cleanOutput.includes('WSL 2') || 
-                           cleanOutput.includes('Default Version: 2');
+
+      this.isWSL2Available =
+        cleanOutput.includes('Version: 2') ||
+        cleanOutput.includes('WSL 2') ||
+        cleanOutput.includes('Default Version: 2');
       console.log('WSL2 available:', this.isWSL2Available);
       return this.isWSL2Available;
     } catch (error) {
@@ -56,22 +57,26 @@ export class WSL2Bridge {
   async convertToWSLPath(windowsPath) {
     try {
       console.log(`Converting Windows path to WSL: ${windowsPath}`);
-      
+
       // Escape backslashes properly for WSL
       const escapedPath = windowsPath.replace(/\\/g, '\\\\');
       const { stdout } = await execPromise(`wsl wslpath "${escapedPath}"`);
       const wslPath = stdout.trim();
-      
-      console.log(`WSL path conversion successful: ${windowsPath} -> ${wslPath}`);
+
+      console.log(
+        `WSL path conversion successful: ${windowsPath} -> ${wslPath}`
+      );
       return wslPath;
     } catch (error) {
-      console.log(`WSL path conversion failed, using fallback: ${error.message}`);
-      
+      console.log(
+        `WSL path conversion failed, using fallback: ${error.message}`
+      );
+
       // Fallback: manually convert Windows path to WSL format
       const drive = windowsPath.charAt(0).toLowerCase();
       const restPath = windowsPath.substring(3).replace(/\\/g, '/');
       const fallbackPath = `/mnt/${drive}/${restPath}`;
-      
+
       console.log(`Fallback WSL path: ${windowsPath} -> ${fallbackPath}`);
       return fallbackPath;
     }
@@ -83,14 +88,14 @@ export class WSL2Bridge {
    * @returns {Promise<Array>} Scan results
    */
   async runSemgrep(targetPath) {
-    if (!await this.isAvailable()) {
+    if (!(await this.isAvailable())) {
       throw new Error('WSL2 is not available');
     }
 
     try {
       // Convert Windows path to WSL path
       const wslPath = await this.convertToWSLPath(targetPath);
-      
+
       // Build Semgrep command
       const args = [
         'semgrep',
@@ -102,7 +107,7 @@ export class WSL2Bridge {
       ];
 
       const result = await this.executeCommand('wsl', args);
-      
+
       // Parse Semgrep JSON output
       return this.parseSemgrepOutput(result);
     } catch (error) {
@@ -118,26 +123,29 @@ export class WSL2Bridge {
    * @returns {Promise<Array>} Scan results
    */
   async runTrivy(targetPath) {
-    if (!await this.isAvailable()) {
+    if (!(await this.isAvailable())) {
       throw new Error('WSL2 is not available');
     }
 
     try {
       // Convert Windows path to WSL path
       const wslPath = await this.convertToWSLPath(targetPath);
-      
+
       // Build Trivy command
       const args = [
         'trivy',
         'fs',
-        '--format', 'json',
-        '--severity', 'CRITICAL,HIGH,MEDIUM,LOW',
-        '--timeout', '5m',
+        '--format',
+        'json',
+        '--severity',
+        'CRITICAL,HIGH,MEDIUM,LOW',
+        '--timeout',
+        '5m',
         wslPath,
       ];
 
       const result = await this.executeCommand('wsl', args);
-      
+
       // Parse Trivy JSON output
       return this.parseTrivyOutput(result);
     } catch (error) {
@@ -186,9 +194,9 @@ export class WSL2Bridge {
 
       process.on('close', (code) => {
         clearTimeout(timeoutId);
-        
+
         if (timedOut) return;
-        
+
         if (code === 0) {
           resolve(output);
         } else {
@@ -197,7 +205,9 @@ export class WSL2Bridge {
           if (output) {
             resolve(output);
           } else {
-            reject(new Error(`Command failed with code ${code}: ${errorOutput}`));
+            reject(
+              new Error(`Command failed with code ${code}: ${errorOutput}`)
+            );
           }
         }
       });
@@ -215,18 +225,24 @@ export class WSL2Bridge {
       const results = [];
 
       if (data.results) {
-        data.results.forEach(result => {
+        data.results.forEach((result) => {
           // Extract relative path (remove WSL mount prefix)
-          const filePath = result.path.replace(/^\/mnt\/[a-z]\//, '').replace(/\//g, '\\');
-          
+          const filePath = result.path
+            .replace(/^\/mnt\/[a-z]\//, '')
+            .replace(/\//g, '\\');
+
           results.push({
             id: result.check_id || result.fingerprint,
             tool: 'Semgrep',
             severity: this.mapSemgrepSeverity(result.severity || 'INFO'),
-            type: result.extra?.metadata?.category || result.check_id?.split('.').pop() || 'Security Issue',
+            type:
+              result.extra?.metadata?.category ||
+              result.check_id?.split('.').pop() ||
+              'Security Issue',
             file: filePath,
             line: result.start?.line || 0,
-            description: result.extra?.message || result.message || result.check_id,
+            description:
+              result.extra?.message || result.message || result.check_id,
             fix: this.generateSemgrepFix(result),
             references: result.extra?.metadata?.references || [],
             confidence: result.extra?.metadata?.confidence || 'MEDIUM',
@@ -256,12 +272,15 @@ export class WSL2Bridge {
       const results = [];
 
       if (data.Results) {
-        data.Results.forEach(target => {
+        data.Results.forEach((target) => {
           if (target.Vulnerabilities) {
-            target.Vulnerabilities.forEach(vuln => {
+            target.Vulnerabilities.forEach((vuln) => {
               // Extract relative path (remove WSL mount prefix)
-              const filePath = target.Target.replace(/^\/mnt\/[a-z]\//, '').replace(/\//g, '\\');
-              
+              const filePath = target.Target.replace(
+                /^\/mnt\/[a-z]\//,
+                ''
+              ).replace(/\//g, '\\');
+
               results.push({
                 id: vuln.VulnerabilityID,
                 tool: 'Trivy',
@@ -269,7 +288,8 @@ export class WSL2Bridge {
                 type: 'Vulnerable Dependency',
                 file: filePath,
                 line: 0, // Trivy doesn't provide line numbers
-                description: vuln.Description || vuln.Title || vuln.VulnerabilityID,
+                description:
+                  vuln.Description || vuln.Title || vuln.VulnerabilityID,
                 fix: this.generateTrivyFix(vuln),
                 references: vuln.References || [],
                 pkgName: vuln.PkgName,
@@ -298,17 +318,17 @@ export class WSL2Bridge {
    */
   mapSemgrepSeverity(severity) {
     const severityMap = {
-      'ERROR': 'CRITICAL',
-      'CRITICAL': 'CRITICAL',
-      'WARNING': 'HIGH',
-      'HIGH': 'HIGH',
-      'INFO': 'MEDIUM',
-      'MEDIUM': 'MEDIUM',
-      'INVENTORY': 'LOW',
-      'LOW': 'LOW',
-      'EXPERIMENTAL': 'INFO',
+      ERROR: 'CRITICAL',
+      CRITICAL: 'CRITICAL',
+      WARNING: 'HIGH',
+      HIGH: 'HIGH',
+      INFO: 'MEDIUM',
+      MEDIUM: 'MEDIUM',
+      INVENTORY: 'LOW',
+      LOW: 'LOW',
+      EXPERIMENTAL: 'INFO',
     };
-    
+
     return severityMap[severity.toUpperCase()] || 'INFO';
   }
 
@@ -319,7 +339,7 @@ export class WSL2Bridge {
    */
   generateSemgrepFix(result) {
     const checkId = result.check_id || '';
-    
+
     // Generate specific fixes based on rule type
     if (checkId.includes('sql-injection')) {
       return 'Use parameterized queries or prepared statements instead of string concatenation';
@@ -334,8 +354,11 @@ export class WSL2Bridge {
     } else if (checkId.includes('hardcoded')) {
       return 'Move sensitive data to environment variables or secure configuration';
     }
-    
-    return result.extra?.metadata?.fix || 'Review and fix the identified security issue';
+
+    return (
+      result.extra?.metadata?.fix ||
+      'Review and fix the identified security issue'
+    );
   }
 
   /**

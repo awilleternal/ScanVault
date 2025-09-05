@@ -10,8 +10,8 @@ export default [
       'dist/**/*',
       'node_modules/',
       'node_modules/**/*',
-      '*.config.js'
-    ]
+      '*.config.js',
+    ],
   },
   js.configs.recommended,
   security.configs.recommended,
@@ -21,8 +21,8 @@ export default [
       sourceType: 'module',
       parserOptions: {
         ecmaFeatures: {
-          jsx: true
-        }
+          jsx: true,
+        },
       },
       globals: {
         console: 'readonly',
@@ -44,13 +44,13 @@ export default [
         AbortController: 'readonly',
         process: 'readonly',
         FormData: 'readonly',
-        Blob: 'readonly'
-      }
+        Blob: 'readonly',
+      },
     },
     plugins: {
       security,
       'react-hooks': reactHooks,
-      'react-refresh': reactRefresh
+      'react-refresh': reactRefresh,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
@@ -68,8 +68,8 @@ export default [
       'object-shorthand': 'error',
       'react-refresh/only-export-components': [
         'warn',
-        { allowConstantExport: true }
-      ]
-    }
-  }
+        { allowConstantExport: true },
+      ],
+    },
+  },
 ];

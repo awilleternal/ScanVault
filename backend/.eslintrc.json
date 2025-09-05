@@ -1,11 +1,6 @@
 {
-  "extends": [
-    "../.eslintrc.json",
-    "plugin:node/recommended"
-  ],
-  "plugins": [
-    "security-node"
-  ],
+  "extends": ["../.eslintrc.json", "plugin:node/recommended"],
+  "plugins": ["security-node"],
   "env": {
     "node": true,
     "es2022": true

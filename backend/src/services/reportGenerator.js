@@ -33,11 +33,11 @@ export class ReportGeneratorService {
     // Calculate summary statistics
     const summary = {
       total: results.length,
-      critical: results.filter(r => r.severity === 'CRITICAL').length,
-      high: results.filter(r => r.severity === 'HIGH').length,
-      medium: results.filter(r => r.severity === 'MEDIUM').length,
-      low: results.filter(r => r.severity === 'LOW').length,
-      info: results.filter(r => r.severity === 'INFO').length,
+      critical: results.filter((r) => r.severity === 'CRITICAL').length,
+      high: results.filter((r) => r.severity === 'HIGH').length,
+      medium: results.filter((r) => r.severity === 'MEDIUM').length,
+      low: results.filter((r) => r.severity === 'LOW').length,
+      info: results.filter((r) => r.severity === 'INFO').length,
     };
 
     // Group results by tool
@@ -61,20 +61,20 @@ export class ReportGeneratorService {
         scanId: scanSession.id,
         targetId: scanSession.targetId,
         timestamp: new Date().toISOString(),
-        scanDuration: scanSession.endTime 
-          ? scanSession.endTime - scanSession.startTime 
+        scanDuration: scanSession.endTime
+          ? scanSession.endTime - scanSession.startTime
           : null,
         selectedTools: scanSession.selectedTools,
         generatedAt: new Date().toISOString(),
       },
       summary,
       toolBreakdown,
-      fileBreakdown: Object.keys(fileBreakdown).map(file => ({
+      fileBreakdown: Object.keys(fileBreakdown).map((file) => ({
         file,
         issueCount: fileBreakdown[file].length,
         issues: fileBreakdown[file],
       })),
-      results: results.map(result => ({
+      results: results.map((result) => ({
         ...result,
         // Add additional metadata
         foundBy: result.tool,
@@ -110,7 +110,7 @@ export class ReportGeneratorService {
         });
 
         const buffers = [];
-        doc.on('data', buffer => buffers.push(buffer));
+        doc.on('data', (buffer) => buffers.push(buffer));
         doc.on('end', () => {
           try {
             const finalBuffer = Buffer.concat(buffers);
@@ -120,7 +120,9 @@ export class ReportGeneratorService {
             }
             resolve(finalBuffer);
           } catch (concatError) {
-            reject(new Error(`Failed to create PDF buffer: ${concatError.message}`));
+            reject(
+              new Error(`Failed to create PDF buffer: ${concatError.message}`)
+            );
           }
         });
         doc.on('error', (error) => {
@@ -130,7 +132,9 @@ export class ReportGeneratorService {
         this.generatePDFContent(doc, scanSession);
         doc.end();
       } catch (error) {
-        reject(new Error(`Failed to initialize PDF generation: ${error.message}`));
+        reject(
+          new Error(`Failed to initialize PDF generation: ${error.message}`)
+        );
       }
     });
   }
@@ -144,40 +148,40 @@ export class ReportGeneratorService {
     const { results = [] } = scanSession;
 
     // Title page
-    doc.fontSize(24)
-       .font('Helvetica-Bold')
-       .text('Security Scan Report', { align: 'center' });
+    doc
+      .fontSize(24)
+      .font('Helvetica-Bold')
+      .text('Security Scan Report', { align: 'center' });
 
     doc.moveDown();
-    doc.fontSize(12)
-       .font('Helvetica')
-       .text(`Scan ID: ${scanSession.id}`, { align: 'center' })
-       .text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
+    doc
+      .fontSize(12)
+      .font('Helvetica')
+      .text(`Scan ID: ${scanSession.id}`, { align: 'center' })
+      .text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
 
     doc.moveDown(2);
 
     // Executive Summary
-    doc.fontSize(16)
-       .font('Helvetica-Bold')
-       .text('Executive Summary');
+    doc.fontSize(16).font('Helvetica-Bold').text('Executive Summary');
 
     doc.moveDown();
-    doc.fontSize(12)
-       .font('Helvetica');
+    doc.fontSize(12).font('Helvetica');
 
     const summary = {
       total: results.length,
-      critical: results.filter(r => r.severity === 'CRITICAL').length,
-      high: results.filter(r => r.severity === 'HIGH').length,
-      medium: results.filter(r => r.severity === 'MEDIUM').length,
-      low: results.filter(r => r.severity === 'LOW').length,
+      critical: results.filter((r) => r.severity === 'CRITICAL').length,
+      high: results.filter((r) => r.severity === 'HIGH').length,
+      medium: results.filter((r) => r.severity === 'MEDIUM').length,
+      low: results.filter((r) => r.severity === 'LOW').length,
     };
 
-    doc.text(`Total Issues Found: ${summary.total}`)
-       .text(`Critical: ${summary.critical}`)
-       .text(`High: ${summary.high}`)
-       .text(`Medium: ${summary.medium}`)
-       .text(`Low: ${summary.low}`);
+    doc
+      .text(`Total Issues Found: ${summary.total}`)
+      .text(`Critical: ${summary.critical}`)
+      .text(`High: ${summary.high}`)
+      .text(`Medium: ${summary.medium}`)
+      .text(`Low: ${summary.low}`);
 
     doc.moveDown();
 
@@ -188,15 +192,12 @@ export class ReportGeneratorService {
     doc.moveDown(2);
 
     // Tools Used
-    doc.fontSize(14)
-       .font('Helvetica-Bold')
-       .text('Security Tools Used');
+    doc.fontSize(14).font('Helvetica-Bold').text('Security Tools Used');
 
     doc.moveDown();
-    doc.fontSize(12)
-       .font('Helvetica');
+    doc.fontSize(12).font('Helvetica');
 
-    scanSession.selectedTools.forEach(tool => {
+    scanSession.selectedTools.forEach((tool) => {
       doc.text(`• ${tool}`);
     });
 
@@ -205,39 +206,41 @@ export class ReportGeneratorService {
     // Detailed Findings
     if (results.length > 0) {
       doc.addPage();
-      doc.fontSize(16)
-         .font('Helvetica-Bold')
-         .text('Detailed Findings');
+      doc.fontSize(16).font('Helvetica-Bold').text('Detailed Findings');
 
       doc.moveDown();
 
       // Group by severity
       const severities = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
-      
-      severities.forEach(severity => {
-        const severityResults = results.filter(r => r.severity === severity);
-        
+
+      severities.forEach((severity) => {
+        const severityResults = results.filter((r) => r.severity === severity);
+
         if (severityResults.length > 0) {
-          doc.fontSize(14)
-             .font('Helvetica-Bold')
-             .text(`${severity} Severity Issues (${severityResults.length})`);
+          doc
+            .fontSize(14)
+            .font('Helvetica-Bold')
+            .text(`${severity} Severity Issues (${severityResults.length})`);
 
           doc.moveDown();
 
           severityResults.forEach((result, index) => {
-            if (doc.y > 700) { // Start new page if near bottom
+            if (doc.y > 700) {
+              // Start new page if near bottom
               doc.addPage();
             }
 
-            doc.fontSize(12)
-               .font('Helvetica-Bold')
-               .text(`${index + 1}. ${result.type}`);
+            doc
+              .fontSize(12)
+              .font('Helvetica-Bold')
+              .text(`${index + 1}. ${result.type}`);
 
-            doc.fontSize(10)
-               .font('Helvetica')
-               .text(`File: ${result.file}:${result.line}`)
-               .text(`Tool: ${result.tool}`)
-               .text(`Description: ${result.description}`);
+            doc
+              .fontSize(10)
+              .font('Helvetica')
+              .text(`File: ${result.file}:${result.line}`)
+              .text(`Tool: ${result.tool}`)
+              .text(`Description: ${result.description}`);
 
             if (result.fix) {
               doc.text(`Fix: ${result.fix}`);
@@ -253,16 +256,13 @@ export class ReportGeneratorService {
 
     // Recommendations
     doc.addPage();
-    doc.fontSize(16)
-       .font('Helvetica-Bold')
-       .text('Recommendations');
+    doc.fontSize(16).font('Helvetica-Bold').text('Recommendations');
 
     doc.moveDown();
-    doc.fontSize(12)
-       .font('Helvetica');
+    doc.fontSize(12).font('Helvetica');
 
     const recommendations = this.generateRecommendations(results);
-    recommendations.forEach(rec => {
+    recommendations.forEach((rec) => {
       doc.text(`• ${rec}`);
       doc.moveDown(0.5);
     });
@@ -276,8 +276,8 @@ export class ReportGeneratorService {
   categorizeVulnerability(type) {
     const categories = {
       'SQL Injection': 'Injection',
-      'XSS': 'Injection',
-      'CSRF': 'Authentication',
+      XSS: 'Injection',
+      CSRF: 'Authentication',
       'Hardcoded Secret': 'Sensitive Data',
       'Vulnerable Dependency': 'Dependencies',
       'Outdated Package': 'Dependencies',
@@ -294,11 +294,11 @@ export class ReportGeneratorService {
    */
   calculateRiskScore(severity) {
     const scores = {
-      'CRITICAL': 10,
-      'HIGH': 8,
-      'MEDIUM': 5,
-      'LOW': 3,
-      'INFO': 1,
+      CRITICAL: 10,
+      HIGH: 8,
+      MEDIUM: 5,
+      LOW: 3,
+      INFO: 1,
     };
 
     return scores[severity] || 1;
@@ -326,33 +326,53 @@ export class ReportGeneratorService {
     const recommendations = [];
 
     // Check for common patterns
-    const hasCritical = results.some(r => r.severity === 'CRITICAL');
-    const hasInjection = results.some(r => r.type.includes('Injection'));
-    const hasOutdatedDeps = results.some(r => r.type.includes('Outdated') || r.type.includes('Vulnerable'));
-    const hasSecrets = results.some(r => r.type.includes('Secret') || r.type.includes('Hardcoded'));
+    const hasCritical = results.some((r) => r.severity === 'CRITICAL');
+    const hasInjection = results.some((r) => r.type.includes('Injection'));
+    const hasOutdatedDeps = results.some(
+      (r) => r.type.includes('Outdated') || r.type.includes('Vulnerable')
+    );
+    const hasSecrets = results.some(
+      (r) => r.type.includes('Secret') || r.type.includes('Hardcoded')
+    );
 
     if (hasCritical) {
-      recommendations.push('Address all CRITICAL severity issues immediately before deployment');
+      recommendations.push(
+        'Address all CRITICAL severity issues immediately before deployment'
+      );
     }
 
     if (hasInjection) {
-      recommendations.push('Implement input validation and use parameterized queries to prevent injection attacks');
+      recommendations.push(
+        'Implement input validation and use parameterized queries to prevent injection attacks'
+      );
     }
 
     if (hasOutdatedDeps) {
-      recommendations.push('Update all dependencies to their latest secure versions');
-      recommendations.push('Consider using automated dependency update tools like Dependabot');
+      recommendations.push(
+        'Update all dependencies to their latest secure versions'
+      );
+      recommendations.push(
+        'Consider using automated dependency update tools like Dependabot'
+      );
     }
 
     if (hasSecrets) {
-      recommendations.push('Move all secrets to environment variables or secure vaults');
+      recommendations.push(
+        'Move all secrets to environment variables or secure vaults'
+      );
       recommendations.push('Implement secret scanning in your CI/CD pipeline');
     }
 
     // General recommendations
-    recommendations.push('Integrate security scanning into your development workflow');
-    recommendations.push('Regular security scans should be performed on all code changes');
-    recommendations.push('Consider implementing security training for your development team');
+    recommendations.push(
+      'Integrate security scanning into your development workflow'
+    );
+    recommendations.push(
+      'Regular security scans should be performed on all code changes'
+    );
+    recommendations.push(
+      'Consider implementing security training for your development team'
+    );
 
     return recommendations;
   }

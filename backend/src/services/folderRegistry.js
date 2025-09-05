@@ -1,13 +1,13 @@
 /**
  * Registry for mapping scan IDs to folder paths
  * This allows direct folder scanning without copying files
- * 
+ *
  * SCANNING BEHAVIOR:
  * - ZIP files: ALWAYS extracted to temp directory (copied)
  * - Repository clones: ALWAYS cloned to temp directory (copied)
  * - Folder uploads via /upload-folder: Files copied to temp directory
  * - Direct folder scans via /scan-folder-path: Files scanned in original location (NO copying)
- * 
+ *
  * This registry is ONLY used for direct folder scanning to map scan IDs to original paths
  */
 

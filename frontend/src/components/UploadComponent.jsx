@@ -2,7 +2,12 @@ import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { uploadFile, uploadFolder, scanFolderPath, cloneRepository } from '../services/api';
+import {
+  uploadFile,
+  uploadFolder,
+  scanFolderPath,
+  cloneRepository,
+} from '../services/api';
 
 /**
  * Component for uploading ZIP files, folders, or providing repository URLs
@@ -15,46 +20,54 @@ import { uploadFile, uploadFolder, scanFolderPath, cloneRepository } from '../se
 function UploadComponent({ onFileSelect, onUrlSubmit, isLoading }) {
   const [uploadType, setUploadType] = useState('file'); // 'file', 'folder', 'direct-folder', or 'url'
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [folderPath, setFolderPath] = useState('');
-  
-  const { register, handleSubmit, formState: { errors }, reset } = useForm();
+  // const [folderPath, setFolderPath] = useState('');
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm();
 
   /**
    * Handle file drop for ZIP files
    */
-  const onDrop = useCallback(async (acceptedFiles) => {
-    if (acceptedFiles.length === 0) return;
-    
-    const file = acceptedFiles[0];
-    
-    // Validate file type
-    if (!file.name.endsWith('.zip')) {
-      toast.error('Please upload a ZIP file');
-      return;
-    }
-    
-    // Validate file size (100MB limit)
-    if (file.size > 100 * 1024 * 1024) {
-      toast.error('File size must be less than 100MB');
-      return;
-    }
-    
-    try {
-      setUploadProgress(0);
-      toast.loading('Uploading file...');
-      
-      const response = await uploadFile(file, (progress) => {
-        setUploadProgress(progress);
-      });
-      
-      toast.dismiss();
-      toast.success('File uploaded successfully!');
-      onFileSelect(response);
-    } catch (error) {
-      toast.dismiss();
-      toast.error(error.message || 'Failed to upload file');
-    }
-  }, [onFileSelect]);
+  const onDrop = useCallback(
+    async (acceptedFiles) => {
+      if (acceptedFiles.length === 0) return;
+
+      const file = acceptedFiles[0];
+
+      // Validate file type
+      if (!file.name.endsWith('.zip')) {
+        toast.error('Please upload a ZIP file');
+        return;
+      }
+
+      // Validate file size (100MB limit)
+      if (file.size > 100 * 1024 * 1024) {
+        toast.error('File size must be less than 100MB');
+        return;
+      }
+
+      try {
+        setUploadProgress(0);
+        toast.loading('Uploading file...');
+
+        const response = await uploadFile(file, (progress) => {
+          setUploadProgress(progress);
+        });
+
+        toast.dismiss();
+        toast.success('File uploaded successfully!');
+        onFileSelect(response);
+      } catch (error) {
+        toast.dismiss();
+        toast.error(error.message || 'Failed to upload file');
+      }
+    },
+    [onFileSelect]
+  );
 
   /**
    * Handle folder upload
@@ -71,17 +84,20 @@ function UploadComponent({ onFileSelect, onUrlSubmit, isLoading }) {
 
     // No limits - allow any size and file count
     console.log(`Uploading ${files.length} files from folder`);
-    const totalSize = Array.from(files).reduce((sum, file) => sum + file.size, 0);
+    const totalSize = Array.from(files).reduce(
+      (sum, file) => sum + file.size,
+      0
+    );
     console.log(`Total size: ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
 
     try {
       setUploadProgress(0);
       toast.loading('Uploading folder...');
-      
+
       const response = await uploadFolder(files, (progress) => {
         setUploadProgress(progress);
       });
-      
+
       toast.dismiss();
       toast.success(`Folder uploaded successfully! (${files.length} files)`);
       onFileSelect(response);
@@ -111,7 +127,7 @@ function UploadComponent({ onFileSelect, onUrlSubmit, isLoading }) {
     try {
       toast.loading('Setting up direct folder scan...');
       const response = await scanFolderPath(data.folderPath);
-      
+
       toast.dismiss();
       toast.success('Folder ready for direct scanning (no files copied)!');
       onFileSelect(response);
@@ -129,7 +145,7 @@ function UploadComponent({ onFileSelect, onUrlSubmit, isLoading }) {
     try {
       toast.loading('Cloning repository...');
       const response = await cloneRepository(data.repositoryUrl);
-      
+
       toast.dismiss();
       toast.success('Repository cloned successfully!');
       onUrlSubmit(response);
@@ -204,7 +220,7 @@ function UploadComponent({ onFileSelect, onUrlSubmit, isLoading }) {
             } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <input {...getInputProps()} />
-            
+
             <svg
               className="mx-auto h-12 w-12 text-gray-400 mb-4"
               fill="none"
@@ -218,7 +234,7 @@ function UploadComponent({ onFileSelect, onUrlSubmit, isLoading }) {
                 d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
               />
             </svg>
-            
+
             {isDragActive ? (
               <p className="text-lg font-medium text-primary-600">
                 Drop the ZIP file here
@@ -233,12 +249,12 @@ function UploadComponent({ onFileSelect, onUrlSubmit, isLoading }) {
                 </p>
               </>
             )}
-            
+
             <p className="mt-2 text-xs text-gray-400">
               ZIP files only, up to 100MB
             </p>
           </div>
-          
+
           {uploadProgress > 0 && uploadProgress < 100 && (
             <div className="mt-4">
               <div className="bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -286,7 +302,7 @@ function UploadComponent({ onFileSelect, onUrlSubmit, isLoading }) {
                   d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-5l-2-2H5a2 2 0 00-2 2z"
                 />
               </svg>
-              
+
               <p className="text-lg font-medium text-gray-900">
                 Click to select a folder
               </p>
@@ -294,15 +310,16 @@ function UploadComponent({ onFileSelect, onUrlSubmit, isLoading }) {
                 All files and subfolders will be included
               </p>
             </label>
-            
+
             <p className="mt-2 text-xs text-red-500">
               Note: Files will be uploaded and copied to server temp directory
             </p>
             <p className="mt-1 text-xs text-gray-500">
-              For large folders or direct scanning, use "Direct Folder Scan" option below
+              For large folders or direct scanning, use "Direct Folder Scan"
+              option below
             </p>
           </div>
-          
+
           {uploadProgress > 0 && uploadProgress < 100 && (
             <div className="mt-4">
               <div className="bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -336,7 +353,8 @@ function UploadComponent({ onFileSelect, onUrlSubmit, isLoading }) {
                 required: 'Folder path is required',
                 validate: (value) => {
                   // Basic validation for absolute paths
-                  const isAbsolute = (value.startsWith('/') || /^[A-Za-z]:[/\\]/.test(value));
+                  const isAbsolute =
+                    value.startsWith('/') || /^[A-Za-z]:[/\\]/.test(value);
                   return isAbsolute || 'Please provide an absolute path';
                 },
               })}
@@ -347,13 +365,15 @@ function UploadComponent({ onFileSelect, onUrlSubmit, isLoading }) {
               </p>
             )}
             <p className="mt-2 text-xs text-green-600">
-              ✅ Files will be scanned directly in their original location (NO copying)
+              ✅ Files will be scanned directly in their original location (NO
+              copying)
             </p>
             <p className="mt-1 text-xs text-gray-500">
-              Best for large projects or when you want to scan without duplicating files
+              Best for large projects or when you want to scan without
+              duplicating files
             </p>
           </div>
-          
+
           <button
             type="submit"
             disabled={isLoading}
@@ -391,7 +411,7 @@ function UploadComponent({ onFileSelect, onUrlSubmit, isLoading }) {
               </p>
             )}
           </div>
-          
+
           <button
             type="submit"
             disabled={isLoading}
@@ -399,7 +419,7 @@ function UploadComponent({ onFileSelect, onUrlSubmit, isLoading }) {
           >
             {isLoading ? 'Processing...' : 'Clone Repository'}
           </button>
-          
+
           <p className="mt-2 text-xs text-gray-500 text-center">
             Supports GitHub, GitLab, Bitbucket, and other Git repositories
           </p>

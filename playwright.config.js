@@ -18,7 +18,7 @@ export default defineConfig({
   reporter: [
     ['html'],
     ['junit', { outputFile: 'test-results/junit.xml' }],
-    ['json', { outputFile: 'test-results/results.json' }]
+    ['json', { outputFile: 'test-results/results.json' }],
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
@@ -90,7 +90,7 @@ export default defineConfig({
       port: 5000,
       reuseExistingServer: !process.env.CI,
       timeout: 120000,
-    }
+    },
   ],
 
   /* Global setup and teardown */

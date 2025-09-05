@@ -8,8 +8,8 @@ export default [
       'frontend/dist/**',
       'backend/dist/**',
       'node_modules/**',
-      '*.config.js'
-    ]
+      '*.config.js',
+    ],
   },
   js.configs.recommended,
   security.configs.recommended,
@@ -26,11 +26,11 @@ export default [
         global: 'readonly',
         require: 'readonly',
         module: 'readonly',
-        exports: 'readonly'
-      }
+        exports: 'readonly',
+      },
     },
     plugins: {
-      security
+      security,
     },
     rules: {
       'no-console': ['warn', { allow: ['warn', 'error'] }],
@@ -44,14 +44,14 @@ export default [
       'prefer-const': 'error',
       'no-var': 'error',
       'arrow-body-style': ['error', 'as-needed'],
-      'object-shorthand': 'error'
+      'object-shorthand': 'error',
     },
     ignores: [
       'dist/**',
       'node_modules/**',
       '*.config.js',
       'frontend/dist/**',
-      'backend/dist/**'
-    ]
-  }
+      'backend/dist/**',
+    ],
+  },
 ];

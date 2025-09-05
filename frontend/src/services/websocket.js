@@ -17,7 +17,7 @@ export class WebSocketService {
    */
   connect(scanId, handlers = {}) {
     this.handlers = handlers;
-    
+
     try {
       const wsUrl = `ws://localhost:5000/ws/${scanId}`;
       this.ws = new WebSocket(wsUrl);
@@ -33,11 +33,11 @@ export class WebSocketService {
       this.ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          
+
           if (this.handlers.onMessage) {
             this.handlers.onMessage(data);
           }
-          
+
           // Handle different message types
           switch (data.type) {
             case 'progress':
@@ -78,13 +78,16 @@ export class WebSocketService {
 
       this.ws.onclose = (event) => {
         console.log('WebSocket disconnected:', event.code, event.reason);
-        
+
         if (this.handlers.onClose) {
           this.handlers.onClose(event);
         }
 
         // Attempt to reconnect if not a clean close
-        if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+        if (
+          event.code !== 1000 &&
+          this.reconnectAttempts < this.maxReconnectAttempts
+        ) {
           this.attemptReconnect(scanId);
         }
       };
@@ -103,9 +106,11 @@ export class WebSocketService {
   attemptReconnect(scanId) {
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-    
-    console.log(`Attempting WebSocket reconnect ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
-    
+
+    console.log(
+      `Attempting WebSocket reconnect ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`
+    );
+
     setTimeout(() => {
       if (this.reconnectAttempts <= this.maxReconnectAttempts) {
         this.connect(scanId, this.handlers);

@@ -21,12 +21,12 @@ export default [
         exports: 'readonly',
         URL: 'readonly',
         setTimeout: 'readonly',
-        clearTimeout: 'readonly'
-      }
+        clearTimeout: 'readonly',
+      },
     },
     plugins: {
       security,
-      'security-node': securityNode
+      'security-node': securityNode,
     },
     rules: {
       'no-console': ['warn', { allow: ['warn', 'error'] }],
@@ -43,12 +43,8 @@ export default [
       'object-shorthand': 'error',
       'security-node/detect-crlf': 'error',
       'security-node/detect-non-literal-require-calls': 'error',
-      'security-node/non-literal-reg-expr': 'error'
+      'security-node/non-literal-reg-expr': 'error',
     },
-    ignores: [
-      'dist/**',
-      'node_modules/**',
-      '*.config.js'
-    ]
-  }
+    ignores: ['dist/**', 'node_modules/**', '*.config.js'],
+  },
 ];

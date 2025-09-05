@@ -8,7 +8,6 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-
 /**
  * Service for orchestrating security scans across multiple tools
  */
@@ -32,38 +31,43 @@ export class ScanOrchestrator {
   async startScan(targetId, selectedTools) {
     try {
       this.sendProgress('Initializing scan...', 0);
-      
+
       // Resolve targetId to actual file path
       const targetPath = this.resolveTargetPath(targetId);
       this.sendProgress(`Resolved target path: ${targetPath}`, 5);
-      
+
       // Validate target path exists and is accessible
       if (!fs.existsSync(targetPath)) {
         throw new Error(`Target path does not exist: ${targetPath}`);
       }
-      
+
       // Additional validation for directory structure
       const stats = fs.statSync(targetPath);
       if (!stats.isDirectory()) {
         throw new Error(`Target path is not a directory: ${targetPath}`);
       }
-      
+
       // Log scanning mode for debugging
-      const isDirect = path.isAbsolute(targetId) || targetId.includes('/') || targetId.includes('\\');
-      console.log(`Scan mode: ${isDirect ? 'DIRECT (no copying)' : 'STANDARD (from temp)'} - Path: ${targetPath}`);
-      
+      const isDirect =
+        path.isAbsolute(targetId) ||
+        targetId.includes('/') ||
+        targetId.includes('\\');
+      console.log(
+        `Scan mode: ${isDirect ? 'DIRECT (no copying)' : 'STANDARD (from temp)'} - Path: ${targetPath}`
+      );
+
       const totalTools = selectedTools.length;
       let completedTools = 0;
 
       for (const tool of selectedTools) {
         this.currentTool = tool;
         const toolProgress = (completedTools / totalTools) * 100;
-        
+
         this.sendProgress(`Starting ${tool} scan...`, toolProgress);
-        
+
         try {
           let toolResults = [];
-          
+
           switch (tool) {
             case 'Semgrep':
               toolResults = await this.runSemgrepWithRealTime(targetPath);
@@ -77,28 +81,29 @@ export class ScanOrchestrator {
             default:
               console.warn(`Unknown tool: ${tool}`);
           }
-          
+
           this.results.push(...toolResults);
           completedTools++;
-          
+
           const newProgress = (completedTools / totalTools) * 100;
           this.sendProgress(`Completed ${tool} scan`, newProgress);
-          
         } catch (error) {
           console.error(`Error running ${tool}:`, error);
-          this.sendProgress(`Error in ${tool}: ${error.message}`, this.progress);
+          this.sendProgress(
+            `Error in ${tool}: ${error.message}`,
+            this.progress
+          );
           // Continue with other tools even if one fails
         }
       }
 
       this.sendProgress('Scan completed successfully!', 100);
-      
+
       // Send completion message to trigger frontend transition
       this.sendCompletion();
-      
+
       // Deduplicate results
       return this.deduplicateResults(this.results);
-      
     } catch (error) {
       this.sendProgress(`Scan failed: ${error.message}`, this.progress);
       throw error;
@@ -117,7 +122,7 @@ export class ScanOrchestrator {
     if (process.env.MOCK_WSL2 === 'true') {
       console.log('Using mocked Semgrep results (MOCK_WSL2=true)');
       // Simulate some processing time
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       return this.getMockedSemgrepResults();
     }
 
@@ -142,7 +147,7 @@ export class ScanOrchestrator {
     if (process.env.MOCK_WSL2 === 'true') {
       console.log('Using mocked Trivy results (MOCK_WSL2=true)');
       // Simulate some processing time
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       return this.getMockedTrivyResults();
     }
 
@@ -191,7 +196,8 @@ export class ScanOrchestrator {
         type: 'SQL Injection',
         file: 'src/database/queries.js',
         line: 42,
-        description: 'User input is concatenated directly into SQL query without proper sanitization',
+        description:
+          'User input is concatenated directly into SQL query without proper sanitization',
         fix: 'Use parameterized queries or prepared statements instead of string concatenation',
         references: ['https://owasp.org/www-community/attacks/SQL_Injection'],
       },
@@ -222,7 +228,8 @@ export class ScanOrchestrator {
         type: 'Vulnerable Dependency',
         file: 'package.json',
         line: 25,
-        description: 'lodash@4.17.11 has known security vulnerabilities (CVE-2020-8203)',
+        description:
+          'lodash@4.17.11 has known security vulnerabilities (CVE-2020-8203)',
         fix: 'Update lodash to version 4.17.21 or later',
         references: ['https://nvd.nist.gov/vuln/detail/CVE-2020-8203'],
       },
@@ -235,7 +242,9 @@ export class ScanOrchestrator {
         line: 150,
         description: 'express@4.16.0 has multiple security issues',
         fix: 'Update express to the latest version (4.18.2 or later)',
-        references: ['https://github.com/expressjs/express/security/advisories'],
+        references: [
+          'https://github.com/expressjs/express/security/advisories',
+        ],
       },
     ];
   }
@@ -253,7 +262,8 @@ export class ScanOrchestrator {
         type: 'License Risk',
         file: 'dependencies.json',
         line: 0,
-        description: 'GPL licensed dependency detected which may have legal implications',
+        description:
+          'GPL licensed dependency detected which may have legal implications',
         fix: 'Review license compatibility with your project requirements',
         references: ['https://www.gnu.org/licenses/gpl-3.0.html'],
       },
@@ -267,11 +277,11 @@ export class ScanOrchestrator {
    */
   deduplicateResults(results) {
     const seen = new Map();
-    
-    return results.filter(result => {
+
+    return results.filter((result) => {
       // Create a unique key based on file, line, and type
       const key = `${result.file}:${result.line}:${result.type}`;
-      
+
       if (seen.has(key)) {
         // If we've seen this before, merge the tools
         const existing = seen.get(key);
@@ -280,7 +290,7 @@ export class ScanOrchestrator {
         }
         return false;
       }
-      
+
       seen.set(key, result);
       return true;
     });
@@ -294,25 +304,30 @@ export class ScanOrchestrator {
   resolveTargetPath(targetId) {
     // IMPORTANT: Direct paths are ONLY allowed for registered folder uploads
     // ZIP files and repository clones should ALWAYS use temp directory
-    
+
     // Check if targetId is already a full path (absolute path)
     if (path.isAbsolute(targetId)) {
       console.log(`Direct scanning: Using absolute path: ${targetId}`);
       return targetId;
     }
-    
+
     // Check if it's a relative path (contains path separators)
     if (targetId.includes('/') || targetId.includes('\\')) {
       const resolvedPath = path.resolve(targetId);
-      console.log(`Direct scanning: Resolved relative path '${targetId}' to: ${resolvedPath}`);
+      console.log(
+        `Direct scanning: Resolved relative path '${targetId}' to: ${resolvedPath}`
+      );
       return resolvedPath;
     }
-    
+
     // For all other cases (UUIDs from ZIP/repo uploads), use temp directory
-    const tempDir = process.env.TEMP_DIR || path.join(__dirname, '../../../temp');
+    const tempDir =
+      process.env.TEMP_DIR || path.join(__dirname, '../../../temp');
     const resolvedPath = path.join(tempDir, targetId);
-    
-    console.log(`Standard scanning: Resolved UUID '${targetId}' to temp path: ${resolvedPath}`);
+
+    console.log(
+      `Standard scanning: Resolved UUID '${targetId}' to temp path: ${resolvedPath}`
+    );
     return resolvedPath;
   }
 
@@ -324,12 +339,13 @@ export class ScanOrchestrator {
       type: 'complete',
       scanId: this.scanId,
       timestamp: new Date().toISOString(),
-      resultCount: this.results.length
+      resultCount: this.results.length,
     };
 
     // Send to WebSocket client if connected
     const client = this.wsClients.get(this.scanId);
-    if (client && client.readyState === 1) { // 1 = OPEN
+    if (client && client.readyState === 1) {
+      // 1 = OPEN
       try {
         client.send(JSON.stringify(completionData));
         console.log(`[${this.scanId}] Sent completion notification`);
@@ -337,7 +353,9 @@ export class ScanOrchestrator {
         console.error('Failed to send completion message:', error);
       }
     } else {
-      console.log(`No WebSocket client found for completion notification: ${this.scanId}`);
+      console.log(
+        `No WebSocket client found for completion notification: ${this.scanId}`
+      );
     }
   }
 
@@ -351,7 +369,9 @@ export class ScanOrchestrator {
     const isWSL2Available = await this.wsl2Bridge.isAvailable();
 
     if (process.env.MOCK_WSL2 === 'true') {
-      console.log('Using mocked Semgrep results with real-time updates (MOCK_WSL2=true)');
+      console.log(
+        'Using mocked Semgrep results with real-time updates (MOCK_WSL2=true)'
+      );
       return this.getMockedSemgrepResultsRealTime();
     }
 
@@ -375,7 +395,9 @@ export class ScanOrchestrator {
     const isWSL2Available = await this.wsl2Bridge.isAvailable();
 
     if (process.env.MOCK_WSL2 === 'true') {
-      console.log('Using mocked Trivy results with real-time updates (MOCK_WSL2=true)');
+      console.log(
+        'Using mocked Trivy results with real-time updates (MOCK_WSL2=true)'
+      );
       return this.getMockedTrivyResultsRealTime();
     }
 
@@ -404,7 +426,9 @@ export class ScanOrchestrator {
     }
 
     if (!isODCAvailable) {
-      console.warn('ODC not available, returning mocked results with real-time updates');
+      console.warn(
+        'ODC not available, returning mocked results with real-time updates'
+      );
       return this.getMockedODCResultsRealTime();
     }
 
@@ -426,7 +450,8 @@ export class ScanOrchestrator {
         type: 'SQL Injection',
         file: 'vulnerable-test-app/index.js',
         line: 26,
-        description: 'Direct string concatenation in SQL query allows SQL injection attacks',
+        description:
+          'Direct string concatenation in SQL query allows SQL injection attacks',
         fix: 'Use parameterized queries or prepared statements instead of string concatenation',
         references: ['https://owasp.org/www-community/attacks/SQL_Injection'],
       },
@@ -437,9 +462,12 @@ export class ScanOrchestrator {
         type: 'Command Injection',
         file: 'vulnerable-test-app/index.js',
         line: 38,
-        description: 'User input directly executed in shell command without sanitization',
+        description:
+          'User input directly executed in shell command without sanitization',
         fix: 'Validate and sanitize user input before using in shell commands, or use safer alternatives',
-        references: ['https://owasp.org/www-community/attacks/Command_Injection'],
+        references: [
+          'https://owasp.org/www-community/attacks/Command_Injection',
+        ],
       },
       {
         id: uuidv4(),
@@ -472,7 +500,9 @@ export class ScanOrchestrator {
         line: 11,
         description: 'Database credentials hardcoded in source code',
         fix: 'Use environment variables or secure configuration management for sensitive data',
-        references: ['https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure'],
+        references: [
+          'https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure',
+        ],
       },
       {
         id: uuidv4(),
@@ -483,7 +513,9 @@ export class ScanOrchestrator {
         line: 119,
         description: 'User input passed directly to eval() function',
         fix: 'Never use eval() with user input. Use JSON.parse() for data or specific parsers',
-        references: ['https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval#never_use_eval!'],
+        references: [
+          'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval#never_use_eval!',
+        ],
       },
       {
         id: uuidv4(),
@@ -492,9 +524,12 @@ export class ScanOrchestrator {
         type: 'Weak Cryptography',
         file: 'vulnerable-test-app/index.js',
         line: 83,
-        description: 'MD5 hash used for password hashing (cryptographically broken)',
+        description:
+          'MD5 hash used for password hashing (cryptographically broken)',
         fix: 'Use bcrypt, scrypt, or Argon2 for password hashing',
-        references: ['https://owasp.org/www-project-cheat-sheets/cheatsheets/Password_Storage_Cheat_Sheet.html'],
+        references: [
+          'https://owasp.org/www-project-cheat-sheets/cheatsheets/Password_Storage_Cheat_Sheet.html',
+        ],
       },
       {
         id: uuidv4(),
@@ -505,26 +540,33 @@ export class ScanOrchestrator {
         line: 104,
         description: 'Sensitive information exposed in debug endpoint',
         fix: 'Remove debug endpoints from production or secure them properly',
-        references: ['https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure'],
-      }
+        references: [
+          'https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure',
+        ],
+      },
     ];
 
     // Simulate discovering vulnerabilities over time
     const results = [];
     for (let i = 0; i < vulnerabilities.length; i++) {
       const vuln = vulnerabilities[i];
-      
+
       // Add some realistic delay between discoveries
-      await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 700));
-      
+      await new Promise((resolve) =>
+        setTimeout(resolve, 300 + Math.random() * 700)
+      );
+
       // Send real-time vulnerability update
       this.sendVulnerability(vuln);
-      
+
       results.push(vuln);
-      
+
       // Update progress based on vulnerability discovery
       const progress = ((i + 1) / vulnerabilities.length) * 100;
-      this.sendProgress(`Found ${vuln.severity} vulnerability: ${vuln.type}`, progress);
+      this.sendProgress(
+        `Found ${vuln.severity} vulnerability: ${vuln.type}`,
+        progress
+      );
     }
 
     return results;
@@ -565,7 +607,8 @@ export class ScanOrchestrator {
         type: 'CVE-2022-0155',
         file: 'package.json',
         line: 1,
-        description: 'follow-redirects: Exposure of Sensitive Information vulnerability',
+        description:
+          'follow-redirects: Exposure of Sensitive Information vulnerability',
         fix: 'Update to follow-redirects version 1.14.7 or later',
         references: ['https://nvd.nist.gov/vuln/detail/CVE-2022-0155'],
       },
@@ -590,25 +633,30 @@ export class ScanOrchestrator {
         description: 'semver: Regular Expression Denial of Service (ReDoS)',
         fix: 'Update to semver version 7.5.2 or later',
         references: ['https://nvd.nist.gov/vuln/detail/CVE-2022-25883'],
-      }
+      },
     ];
 
     // Simulate discovering vulnerabilities over time
     const results = [];
     for (let i = 0; i < vulnerabilities.length; i++) {
       const vuln = vulnerabilities[i];
-      
+
       // Add some realistic delay between discoveries
-      await new Promise(resolve => setTimeout(resolve, 400 + Math.random() * 800));
-      
+      await new Promise((resolve) =>
+        setTimeout(resolve, 400 + Math.random() * 800)
+      );
+
       // Send real-time vulnerability update
       this.sendVulnerability(vuln);
-      
+
       results.push(vuln);
-      
+
       // Update progress based on vulnerability discovery
       const progress = ((i + 1) / vulnerabilities.length) * 100;
-      this.sendProgress(`Found dependency vulnerability: ${vuln.type}`, progress);
+      this.sendProgress(
+        `Found dependency vulnerability: ${vuln.type}`,
+        progress
+      );
     }
 
     return results;
@@ -638,7 +686,8 @@ export class ScanOrchestrator {
         type: 'License Risk',
         file: 'dependencies.json',
         line: 0,
-        description: 'GPL licensed dependency detected which may have legal implications',
+        description:
+          'GPL licensed dependency detected which may have legal implications',
         fix: 'Review license compatibility with your project requirements',
         references: ['https://www.gnu.org/licenses/gpl-3.0.html'],
       },
@@ -648,15 +697,17 @@ export class ScanOrchestrator {
     const results = [];
     for (let i = 0; i < vulnerabilities.length; i++) {
       const vuln = vulnerabilities[i];
-      
+
       // Add some realistic delay between discoveries
-      await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
-      
+      await new Promise((resolve) =>
+        setTimeout(resolve, 500 + Math.random() * 1000)
+      );
+
       // Send real-time vulnerability update
       this.sendVulnerability(vuln);
-      
+
       results.push(vuln);
-      
+
       // Update progress based on vulnerability discovery
       const progress = ((i + 1) / vulnerabilities.length) * 100;
       this.sendProgress(`Found ODC vulnerability: ${vuln.type}`, progress);
@@ -681,10 +732,13 @@ export class ScanOrchestrator {
 
     // Send to WebSocket client if connected
     const client = this.wsClients.get(this.scanId);
-    if (client && client.readyState === 1) { // 1 = OPEN
+    if (client && client.readyState === 1) {
+      // 1 = OPEN
       try {
         client.send(JSON.stringify(vulnerabilityData));
-        console.log(`[${this.scanId}] Sent vulnerability: ${vulnerability.type} (${vulnerability.severity})`);
+        console.log(
+          `[${this.scanId}] Sent vulnerability: ${vulnerability.type} (${vulnerability.severity})`
+        );
       } catch (error) {
         console.error('Failed to send vulnerability message:', error);
       }
@@ -700,7 +754,7 @@ export class ScanOrchestrator {
    */
   sendProgress(message, percent) {
     this.progress = percent;
-    
+
     const progressData = {
       type: 'progress',
       scanId: this.scanId,
@@ -712,7 +766,8 @@ export class ScanOrchestrator {
 
     // Send to WebSocket client if connected
     const client = this.wsClients.get(this.scanId);
-    if (client && client.readyState === 1) { // 1 = OPEN
+    if (client && client.readyState === 1) {
+      // 1 = OPEN
       try {
         client.send(JSON.stringify(progressData));
       } catch (error) {

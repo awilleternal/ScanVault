@@ -41,7 +41,10 @@ const upload = multer({
     fileSize: parseInt(process.env.MAX_FILE_SIZE || '104857600'), // 100MB default
   },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/zip' || file.mimetype === 'application/x-zip-compressed') {
+    if (
+      file.mimetype === 'application/zip' ||
+      file.mimetype === 'application/x-zip-compressed'
+    ) {
       cb(null, true);
     } else {
       cb(new Error('Only ZIP files are allowed'), false);
@@ -54,7 +57,7 @@ const folderUpload = multer({
   storage,
   limits: {
     fileSize: Infinity, // No file size limit
-    files: Infinity,    // No file count limit
+    files: Infinity, // No file count limit
     fieldSize: Infinity, // No field size limit
   },
   fileFilter: (req, file, cb) => {
@@ -155,48 +158,54 @@ router.post('/clone', async (req, res, next) => {
  * NOTE: This uploads and COPIES files to temp directory for scanning
  * For direct folder scanning without copying, use /api/scan-folder-path
  */
-router.post('/upload-folder', folderUpload.array('files'), async (req, res, next) => {
-  try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({
-        error: {
-          message: 'No files uploaded',
-        },
+router.post(
+  '/upload-folder',
+  folderUpload.array('files'),
+  async (req, res, next) => {
+    try {
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({
+          error: {
+            message: 'No files uploaded',
+          },
+        });
+      }
+
+      console.log(
+        `Folder upload (with copying): ${req.files.length} files received`
+      );
+      console.log('First file details:', {
+        originalname: req.files[0]?.originalname,
+        filename: req.files[0]?.filename,
+        mimetype: req.files[0]?.mimetype,
+        size: req.files[0]?.size,
       });
+
+      // Ensure directories are initialized
+      await fileHandler.initDirectories();
+
+      // Process the uploaded folder files (COPIES them to temp directory)
+      const folderResult = await fileHandler.processFolderUpload(req.files);
+
+      const response = {
+        id: folderResult.id,
+        fileCount: req.files.length,
+        totalSize: req.files.reduce((sum, file) => sum + file.size, 0),
+        extractedPath: folderResult.path,
+        timestamp: new Date().toISOString(),
+        type: 'folder-upload', // Changed to distinguish from direct scanning
+        scanReady: true,
+        copied: true, // Indicates files were copied to temp
+      };
+
+      console.log('Folder upload (copied) response:', response);
+      res.json(response);
+    } catch (error) {
+      console.error('Folder upload route error:', error);
+      next(error);
     }
-
-    console.log(`Folder upload (with copying): ${req.files.length} files received`);
-    console.log('First file details:', {
-      originalname: req.files[0]?.originalname,
-      filename: req.files[0]?.filename,
-      mimetype: req.files[0]?.mimetype,
-      size: req.files[0]?.size
-    });
-
-    // Ensure directories are initialized
-    await fileHandler.initDirectories();
-
-    // Process the uploaded folder files (COPIES them to temp directory)
-    const folderResult = await fileHandler.processFolderUpload(req.files);
-
-    const response = {
-      id: folderResult.id,
-      fileCount: req.files.length,
-      totalSize: req.files.reduce((sum, file) => sum + file.size, 0),
-      extractedPath: folderResult.path,
-      timestamp: new Date().toISOString(),
-      type: 'folder-upload', // Changed to distinguish from direct scanning
-      scanReady: true,
-      copied: true, // Indicates files were copied to temp
-    };
-
-    console.log('Folder upload (copied) response:', response);
-    res.json(response);
-  } catch (error) {
-    console.error('Folder upload route error:', error);
-    next(error);
   }
-});
+);
 
 /**
  * POST /api/scan-folder-path
@@ -243,10 +252,10 @@ router.post('/scan-folder-path', async (req, res, next) => {
 
     // Create a scan entry using the direct path
     const scanId = path.basename(absolutePath) + '-' + Date.now();
-    
+
     // Register the direct folder path for scanning WITHOUT copying
     folderRegistry.register(scanId, absolutePath);
-    
+
     // Validate folder for scanning
     await fileHandler.validateFolderForScanning(absolutePath);
 

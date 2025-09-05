@@ -18,11 +18,13 @@ Tools: Semgrep CLI, Trivy CLI (run via WSL2)
 ### Technology Stack
 
 **Frontend:**
+
 - React + TypeScript (Vite)
 - Tailwind CSS (optional but helpful)
 - React Hook Form (simple forms)
 
 **Backend:**
+
 - Node.js + Express (TypeScript)
 - Multer (file uploads)
 - node-stream-zip (ZIP extraction)
@@ -30,17 +32,20 @@ Tools: Semgrep CLI, Trivy CLI (run via WSL2)
 - ws (WebSocket) for progress updates
 
 **Testing:**
+
 - Vitest (unit)
 - React Testing Library (components)
 - Playwright (E2E; mocked by default)
 
 **Reports:**
+
 - JSON (native)
 - PDF (generate from HTML or lightweight library)
 
 ## Core Frontend Components (Essential Props)
 
 #### UploadComponent
+
 ```typescript
 interface UploadComponentProps {
   onFileSelect: (file: File) => void;
@@ -48,9 +53,11 @@ interface UploadComponentProps {
   isLoading: boolean;
 }
 ```
+
 - Validates ZIP and basic URL format
 
 #### ScannerSelection
+
 ```typescript
 interface ScannerSelectionProps {
   availableTools: string[];
@@ -58,9 +65,11 @@ interface ScannerSelectionProps {
   onStart: () => void;
 }
 ```
+
 - Ensures at least one tool selected
 
 #### ProgressMonitor
+
 ```typescript
 interface ProgressMonitorProps {
   currentTool: string;
@@ -68,15 +77,18 @@ interface ProgressMonitorProps {
   logs: string[];
 }
 ```
+
 - Receives updates over WebSocket
 
 #### ResultsDashboard
+
 ```typescript
 interface ResultsDashboardProps {
   scanResults: ScanResult[];
   onDownload: (format: 'json' | 'pdf') => void;
 }
 ```
+
 - Groups by severity, expandable items
 
 ## Essential Backend APIs
@@ -99,6 +111,7 @@ GET /api/scan/:scanId/report/:format — format = json | pdf (download)
 ## Essential Backend Services (Signatures Only)
 
 #### FileHandler
+
 ```typescript
 handleUpload(file): { id, path }
 extractZip(path): extractedPath
@@ -107,6 +120,7 @@ cleanup(path)
 ```
 
 #### WSL2Bridge
+
 ```typescript
 runSemgrep(targetPath): SemgrepResult
 runTrivy(targetPath): TrivyResult
@@ -115,6 +129,7 @@ isAvailable(): boolean
 ```
 
 #### ScanOrchestrator
+
 ```typescript
 startScan(targetPath, tools[]): scanId
 // Reports progress via WebSocket
@@ -123,9 +138,10 @@ startScan(targetPath, tools[]): scanId
 ```
 
 #### ReportGenerator
+
 ```typescript
-generateJSON(scanId)
-generatePDF(scanId) // Simple HTML->PDF
+generateJSON(scanId);
+generatePDF(scanId); // Simple HTML->PDF
 ```
 
 ## Data Handling (Minimal)
@@ -135,6 +151,7 @@ Persisting scans is optional; default mode: ephemeral (temp dirs + memory).
 If persistence is later required, add SQLite as a separate milestone.
 
 ### Minimal ScanSession Shape
+
 ```typescript
 {
   id: string,
@@ -165,15 +182,19 @@ If persistence is later required, add SQLite as a separate milestone.
 ## Testing Strategy (Essential + Pragmatic)
 
 ### Unit (Vitest)
+
 FileHandler, WSL2Bridge parsing, ScanOrchestrator logic (mock tool outputs)
 
 ### Component (RTL)
+
 Upload + ScannerSelection + Results basic behaviors
 
 ### E2E (Playwright)
+
 Full workflow using mocked tools (fast). Real-tool E2E only in manual/dev mode with WSL2 available
 
 ### Coverage Target
+
 ≥80% initially
 
 ## Minimal Dev Commands (package.json scripts)
@@ -199,18 +220,22 @@ ENABLE_ODC=false     # optional, Windows-only
 ## Incremental Milestones (Essential Path)
 
 ### M1 — Upload & ZIP validation
+
 Upload UI + backend upload/extract
 Unit tests for FileHandler
 
 ### M2 — Mocked scan flow
+
 Scanner UI + orchestrator with mocked Semgrep/Trivy outputs
 WebSocket progress updates
 Component & unit tests
 
 ### M3 — WSL2 integration (real commands, feature-detected)
+
 WSL2Bridge with MOCK_WSL2=false support
 Real parsing of Semgrep/Trivy outputs
 Add Playwright E2E (mocked) + optional manual E2E with WSL2
 
 ### M4 — Reports
+
 JSON + PDF generation and download

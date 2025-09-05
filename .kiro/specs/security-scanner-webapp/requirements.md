@@ -13,7 +13,7 @@ This feature involves building a clean, aesthetic web application that performs 
 #### Acceptance Criteria
 
 1. WHEN a user visits the web application THEN the system SHALL display a clean, modern interface with upload options
-2. WHEN a user selects file upload THEN the system SHALL accept ZIP files 
+2. WHEN a user selects file upload THEN the system SHALL accept ZIP files
 3. WHEN a user provides a repository URL THEN the system SHALL validate the URL format and accessibility
 4. IF the uploaded file is not a ZIP format THEN the system SHALL display an error message and reject the upload
 5. IF the repository URL is invalid or inaccessible THEN the system SHALL display an appropriate error message
@@ -108,7 +108,7 @@ This feature involves building a clean, aesthetic web application that performs 
 #### Acceptance Criteria
 
 1. WHEN executing Semgrep THEN the system SHALL run commands in isolated WSL2 environment
-2. WHEN executing Trivy THEN the system SHALL run commands in isolated WSL2 environment  
+2. WHEN executing Trivy THEN the system SHALL run commands in isolated WSL2 environment
 3. WHEN processing user uploads THEN the system SHALL sanitize file paths and validate content
 4. WHEN running scans THEN the system SHALL implement timeouts to prevent resource exhaustion
 5. IF WSL2 is unavailable THEN the system SHALL gracefully disable affected scanning options and notify the user
