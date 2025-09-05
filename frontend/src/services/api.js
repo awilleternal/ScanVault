@@ -1,5 +1,23 @@
 import axios from 'axios';
 
+// Performance logging utility
+const apiLogger = {
+  log: (level, message, data = {}) => {
+    const timestamp = new Date().toISOString();
+    const logData = {
+      timestamp,
+      level,
+      message,
+      ...data
+    };
+    console.log(`[API-${level.toUpperCase()}] ${timestamp} ${message}`, logData);
+  },
+  info: (message, data) => apiLogger.log('info', message, data),
+  warn: (message, data) => apiLogger.log('warn', message, data),
+  error: (message, data) => apiLogger.log('error', message, data),
+  debug: (message, data) => apiLogger.log('debug', message, data)
+};
+
 // Create axios instance with base configuration
 const api = axios.create({
   baseURL: '/api',
@@ -9,32 +27,100 @@ const api = axios.create({
   },
 });
 
+apiLogger.info('🚀 API service initialized', {
+  baseURL: '/api',
+  timeout: 120000
+});
+
 // Request interceptor for auth tokens or other headers
 api.interceptors.request.use(
-  (config) =>
+  (config) => {
+    const requestId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+    config.metadata = { startTime: Date.now(), requestId };
+    
+    apiLogger.debug('📤 API Request starting', {
+      requestId,
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      timeout: config.timeout,
+      hasData: !!config.data,
+      dataSize: config.data ? JSON.stringify(config.data).length : 0
+    });
+    
     // Add auth token if available
     // const token = localStorage.getItem('authToken');
     // if (token) {
     //   config.headers.Authorization = `Bearer ${token}`;
     // }
-    config,
-  (error) => Promise.reject(error)
+    return config;
+  },
+  (error) => {
+    apiLogger.error('❌ Request interceptor error', { error: error.message });
+    return Promise.reject(error);
+  }
 );
 
 // Response interceptor for error handling
 api.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    const { requestId, startTime } = response.config.metadata || {};
+    const duration = startTime ? Date.now() - startTime : null;
+    
+    apiLogger.info('📥 API Response received', {
+      requestId,
+      method: response.config.method?.toUpperCase(),
+      url: response.config.url,
+      status: response.status,
+      statusText: response.statusText,
+      duration,
+      responseSize: JSON.stringify(response.data).length
+    });
+    
+    return response.data;
+  },
   (error) => {
+    const { requestId, startTime } = error.config?.metadata || {};
+    const duration = startTime ? Date.now() - startTime : null;
+    
+    let errorDetails = {
+      requestId,
+      method: error.config?.method?.toUpperCase(),
+      url: error.config?.url,
+      duration
+    };
+
     if (error.response) {
       // Server responded with error status
+      errorDetails = {
+        ...errorDetails,
+        status: error.response.status,
+        statusText: error.response.statusText,
+        responseData: error.response.data
+      };
+      
+      apiLogger.error('❌ API Response error (server)', errorDetails);
+      
       const message =
         error.response.data?.error?.message || 'An error occurred';
       throw new Error(message);
     } else if (error.request) {
       // Request made but no response
+      errorDetails = {
+        ...errorDetails,
+        requestTimeout: error.code === 'ECONNABORTED',
+        networkError: true
+      };
+      
+      apiLogger.error('❌ API Request error (network)', errorDetails);
       throw new Error('Network error. Please check your connection.');
     } else {
       // Something else happened
+      errorDetails = {
+        ...errorDetails,
+        errorMessage: error.message
+      };
+      
+      apiLogger.error('❌ API Request error (other)', errorDetails);
       throw new Error(error.message || 'An unexpected error occurred');
     }
   }
@@ -126,13 +212,40 @@ export const cloneRepository = async (repositoryUrl) => {
  * @returns {Promise<Object>} Scan response with scan ID and WebSocket URL
  */
 export const startScan = async (targetId, selectedTools) => {
-  console.log('🔥 [API] Making scan request with:', { targetId, selectedTools });
-  const response = await api.post('/scan', {
+  const functionStart = Date.now();
+  const requestData = { targetId, selectedTools };
+  
+  apiLogger.info('🚀 Starting scan request', {
     targetId,
     selectedTools,
+    toolCount: selectedTools.length,
+    requestDataSize: JSON.stringify(requestData).length
   });
-  console.log('🔥 [API] Scan response received:', response);
-  return response;
+  
+  try {
+    const response = await api.post('/scan', requestData);
+    const functionDuration = Date.now() - functionStart;
+    
+    apiLogger.info('✅ Scan request successful', {
+      targetId,
+      scanId: response.scanId,
+      functionDuration,
+      response
+    });
+    
+    return response;
+  } catch (error) {
+    const functionDuration = Date.now() - functionStart;
+    
+    apiLogger.error('❌ Scan request failed', {
+      targetId,
+      selectedTools,
+      functionDuration,
+      error: error.message
+    });
+    
+    throw error;
+  }
 };
 
 /**
@@ -196,29 +309,80 @@ export const downloadReport = async (scanId, format) => {
  */
 export const createWebSocketConnection = (scanId, handlers) => {
   const wsUrl = `ws://localhost:5000/ws/${scanId}`;
+  const connectionStart = Date.now();
+  
+  apiLogger.info('🔌 Creating WebSocket connection', {
+    scanId,
+    wsUrl,
+    hasHandlers: {
+      onOpen: !!handlers.onOpen,
+      onMessage: !!handlers.onMessage,
+      onError: !!handlers.onError,
+      onClose: !!handlers.onClose
+    }
+  });
+  
   const ws = new WebSocket(wsUrl);
+  let messageCount = 0;
+  let bytesReceived = 0;
 
   ws.onopen = () => {
-    console.log('WebSocket connected');
+    const connectionTime = Date.now() - connectionStart;
+    apiLogger.info('✅ WebSocket connected', {
+      scanId,
+      connectionTimeMs: connectionTime
+    });
     if (handlers.onOpen) handlers.onOpen();
   };
 
   ws.onmessage = (event) => {
+    messageCount++;
+    bytesReceived += event.data.length;
+    
     try {
       const data = JSON.parse(event.data);
+      apiLogger.debug('📥 WebSocket message received', {
+        scanId,
+        messageCount,
+        bytesReceived,
+        messageType: data.type,
+        messageSize: event.data.length,
+        timestamp: data.timestamp
+      });
+      
       if (handlers.onMessage) handlers.onMessage(data);
     } catch (error) {
-      console.error('Failed to parse WebSocket message:', error);
+      apiLogger.error('❌ Failed to parse WebSocket message', {
+        scanId,
+        error: error.message,
+        rawMessage: event.data.substring(0, 100),
+        messageSize: event.data.length
+      });
     }
   };
 
   ws.onerror = (error) => {
-    console.error('WebSocket error:', error);
+    apiLogger.error('❌ WebSocket error', {
+      scanId,
+      error: error.message || 'Unknown WebSocket error',
+      readyState: ws.readyState,
+      messagesReceived: messageCount,
+      totalBytesReceived: bytesReceived
+    });
     if (handlers.onError) handlers.onError(error);
   };
 
-  ws.onclose = () => {
-    console.log('WebSocket disconnected');
+  ws.onclose = (event) => {
+    const sessionDuration = Date.now() - connectionStart;
+    apiLogger.info('🔌 WebSocket disconnected', {
+      scanId,
+      sessionDurationMs: sessionDuration,
+      closeCode: event.code,
+      closeReason: event.reason,
+      wasClean: event.wasClean,
+      messagesReceived: messageCount,
+      totalBytesReceived: bytesReceived
+    });
     if (handlers.onClose) handlers.onClose();
   };
 

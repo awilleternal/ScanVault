@@ -2,6 +2,27 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { ScanOrchestrator } from '../services/scanOrchestrator.js';
 import { folderRegistry } from '../services/folderRegistry.js';
+import winston from 'winston';
+
+// Configure detailed logger for scan routes
+const scanRouteLogger = winston.createLogger({
+  level: 'debug',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.printf(({ timestamp, level, message, ...meta }) => {
+      const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
+      return `${timestamp} [SCAN-ROUTE-${level.toUpperCase()}] ${message}${metaStr}`;
+    })
+  ),
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ 
+      filename: 'logs/scan-routes.log',
+      maxsize: 10485760, // 10MB
+      maxFiles: 5
+    })
+  ],
+});
 
 const router = express.Router();
 
@@ -13,14 +34,27 @@ const scanSessions = new Map();
  * Start a security scan
  */
 router.post('/', async (req, res, next) => {
+  const requestStart = Date.now();
+  const requestId = uuidv4();
+  
   try {
     const { targetId, selectedTools } = req.body;
+    const clientIp = req.ip || req.connection.remoteAddress;
 
-    console.log(`🔥 [SCAN] Starting scan request:`);
-    console.log(`🔥 [SCAN] - Target ID: ${targetId}`);
-    console.log(`🔥 [SCAN] - Selected Tools: ${JSON.stringify(selectedTools)}`);
+    scanRouteLogger.info('🚀 POST /api/scan - New scan request', {
+      requestId,
+      targetId,
+      selectedTools,
+      clientIp,
+      userAgent: req.get('User-Agent'),
+      contentType: req.get('Content-Type')
+    });
 
     if (!targetId) {
+      scanRouteLogger.warn('❌ Missing target ID in request', { 
+        requestId,
+        requestTimeMs: Date.now() - requestStart 
+      });
       return res.status(400).json({
         error: {
           message: 'Target ID is required',
@@ -33,6 +67,11 @@ router.post('/', async (req, res, next) => {
       !Array.isArray(selectedTools) ||
       selectedTools.length === 0
     ) {
+      scanRouteLogger.warn('❌ Invalid selected tools in request', { 
+        requestId,
+        selectedTools,
+        requestTimeMs: Date.now() - requestStart 
+      });
       return res.status(400).json({
         error: {
           message: 'At least one scanning tool must be selected',
@@ -42,7 +81,11 @@ router.post('/', async (req, res, next) => {
 
     // Create scan ID
     const scanId = uuidv4();
-    console.log(`🔥 [SCAN] Generated scan ID: ${scanId}`);
+    scanRouteLogger.debug('🆔 Generated scan ID', { 
+      requestId,
+      scanId,
+      scanIdGenerationTimeMs: Date.now() - requestStart 
+    });
 
     // Get WebSocket clients from app locals
     const wsClients = req.app.locals.wsClients;

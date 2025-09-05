@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
+import { setTimeout, clearTimeout } from 'timers';
 
 /**
  * Test helper utilities for Security Scanner E2E tests

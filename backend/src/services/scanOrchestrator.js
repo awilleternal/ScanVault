@@ -5,6 +5,27 @@ import { folderRegistry } from './folderRegistry.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import winston from 'winston';
+
+// Configure detailed logger for scan orchestration
+const orchestratorLogger = winston.createLogger({
+  level: 'debug',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.printf(({ timestamp, level, message, ...meta }) => {
+      const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
+      return `${timestamp} [ORCHESTRATOR-${level.toUpperCase()}] ${message}${metaStr}`;
+    })
+  ),
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ 
+      filename: 'logs/scan-orchestrator.log',
+      maxsize: 10485760, // 10MB
+      maxFiles: 5
+    })
+  ],
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,48 +51,93 @@ export class ScanOrchestrator {
    * @returns {Promise<Array>} Scan results
    */
   async startScan(targetId, selectedTools) {
+    const scanStartTime = Date.now();
+    const scanContext = {
+      scanId: this.scanId,
+      targetId,
+      selectedTools,
+      toolCount: selectedTools.length
+    };
+
+    orchestratorLogger.info('🚀 Starting security scan', scanContext);
+
     try {
-      console.log(`🔥 [ORCHESTRATOR] Starting scan with:`);
-      console.log(`🔥 [ORCHESTRATOR] - Target ID: ${targetId}`);
-      console.log(`🔥 [ORCHESTRATOR] - Tools: ${JSON.stringify(selectedTools)}`);
-      
+      orchestratorLogger.debug('📋 Scan initialization phase', scanContext);
       this.sendProgress('Initializing scan...', 0);
 
       // Resolve targetId to actual file path
-      console.log(`🔥 [ORCHESTRATOR] About to resolve target path for: ${targetId}`);
+      orchestratorLogger.debug('🔍 Resolving target path...', { targetId });
+      const pathResolutionStart = Date.now();
+      
       const targetPath = this.resolveTargetPath(targetId);
-      console.log(`🔥 [ORCHESTRATOR] Resolved target path: ${targetPath}`);
+      const pathResolutionElapsed = Date.now() - pathResolutionStart;
+      
+      orchestratorLogger.info('✅ Target path resolved', {
+        targetId,
+        targetPath,
+        resolutionTimeMs: pathResolutionElapsed,
+        ...scanContext
+      });
       
       this.sendProgress(`Resolved target path: ${targetPath}`, 5);
 
       // Validate target path exists and is accessible
-      console.log(`🔥 [ORCHESTRATOR] Checking if target path exists: ${targetPath}`);
+      orchestratorLogger.debug('🔍 Validating target path existence...', { targetPath });
+      const validationStart = Date.now();
+      
       if (!fs.existsSync(targetPath)) {
-        console.log(`🔥 [ORCHESTRATOR] ❌ Target path does NOT exist: ${targetPath}`);
+        orchestratorLogger.error('❌ Target path does not exist', { 
+          targetPath, 
+          validationTimeMs: Date.now() - validationStart 
+        });
         throw new Error(`Target path does not exist: ${targetPath}`);
       }
-      console.log(`🔥 [ORCHESTRATOR] ✅ Target path exists`);
+      
+      orchestratorLogger.debug('✅ Target path exists', { 
+        targetPath,
+        existenceCheckMs: Date.now() - validationStart 
+      });
 
       // Additional validation for directory structure
+      const statsStart = Date.now();
       const stats = fs.statSync(targetPath);
+      const statsElapsed = Date.now() - statsStart;
+      
       if (!stats.isDirectory()) {
-        console.log(`🔥 [ORCHESTRATOR] ❌ Target path is not a directory: ${targetPath}`);
+        orchestratorLogger.error('❌ Target path is not a directory', { 
+          targetPath,
+          statsTimeMs: statsElapsed 
+        });
         throw new Error(`Target path is not a directory: ${targetPath}`);
       }
-      console.log(`🔥 [ORCHESTRATOR] ✅ Target path is a directory`);
+      
+      orchestratorLogger.debug('✅ Target path is a valid directory', { 
+        targetPath,
+        statsTimeMs: statsElapsed,
+        size: stats.size,
+        modified: stats.mtime
+      });
 
       // List files in the target directory for debugging
       try {
+        const fileListStart = Date.now();
         const files = fs.readdirSync(targetPath);
-        console.log(`🔥 [ORCHESTRATOR] Files in target directory (${files.length} total):`);
-        files.slice(0, 10).forEach(file => {
-          console.log(`🔥 [ORCHESTRATOR] - ${file}`);
+        const fileListElapsed = Date.now() - fileListStart;
+        
+        orchestratorLogger.info('📁 Target directory contents analyzed', {
+          targetPath,
+          fileCount: files.length,
+          fileListTimeMs: fileListElapsed,
+          sampleFiles: files.slice(0, 10),
+          hasMoreFiles: files.length > 10
         });
-        if (files.length > 10) {
-          console.log(`🔥 [ORCHESTRATOR] ... and ${files.length - 10} more files`);
-        }
+        
       } catch (error) {
-        console.log(`🔥 [ORCHESTRATOR] ❌ Error listing files: ${error.message}`);
+        orchestratorLogger.warn('⚠️ Error listing directory contents', {
+          targetPath,
+          error: error.message,
+          validationTimeMs: Date.now() - validationStart
+        });
       }
 
       // Log scanning mode for debugging
@@ -79,59 +145,142 @@ export class ScanOrchestrator {
         path.isAbsolute(targetId) ||
         targetId.includes('/') ||
         targetId.includes('\\');
-      console.log(
-        `Scan mode: ${isDirect ? 'DIRECT (no copying)' : 'STANDARD (from temp)'} - Path: ${targetPath}`
-      );
+      
+      const scanMode = isDirect ? 'DIRECT' : 'STANDARD';
+      orchestratorLogger.info('📋 Scan mode determined', {
+        mode: scanMode,
+        isDirect,
+        targetId,
+        targetPath,
+        ...scanContext
+      });
 
       const totalTools = selectedTools.length;
       let completedTools = 0;
+      const toolResults = [];
+
+      orchestratorLogger.info('🔧 Starting tool execution phase', {
+        totalTools,
+        tools: selectedTools,
+        ...scanContext
+      });
 
       for (const tool of selectedTools) {
+        const toolStartTime = Date.now();
         this.currentTool = tool;
         const toolProgress = (completedTools / totalTools) * 100;
+
+        orchestratorLogger.info(`🔍 Starting ${tool} scan`, {
+          tool,
+          toolIndex: completedTools + 1,
+          totalTools,
+          progress: toolProgress,
+          ...scanContext
+        });
 
         this.sendProgress(`Starting ${tool} scan...`, toolProgress);
 
         try {
-          let toolResults = [];
+          let currentToolResults = [];
 
           switch (tool) {
             case 'Semgrep':
-              toolResults = await this.runSemgrepWithRealTime(targetPath);
+              currentToolResults = await this.runSemgrepWithRealTime(targetPath);
               break;
             case 'Trivy':
-              toolResults = await this.runTrivyWithRealTime(targetPath);
+              currentToolResults = await this.runTrivyWithRealTime(targetPath);
               break;
             case 'OWASP Dependency Check':
-              toolResults = await this.runODCWithRealTime(targetPath);
+              currentToolResults = await this.runODCWithRealTime(targetPath);
               break;
             default:
-              console.warn(`Unknown tool: ${tool}`);
+              orchestratorLogger.warn(`❓ Unknown tool requested: ${tool}`, { tool, ...scanContext });
           }
 
-          this.results.push(...toolResults);
+          const toolElapsed = Date.now() - toolStartTime;
+          this.results.push(...currentToolResults);
+          toolResults.push({
+            tool,
+            resultCount: currentToolResults.length,
+            executionTimeMs: toolElapsed
+          });
           completedTools++;
 
           const newProgress = (completedTools / totalTools) * 100;
+          
+          orchestratorLogger.info(`✅ ${tool} scan completed`, {
+            tool,
+            resultCount: currentToolResults.length,
+            executionTimeMs: toolElapsed,
+            completedTools,
+            totalTools,
+            progress: newProgress,
+            ...scanContext
+          });
+          
           this.sendProgress(`Completed ${tool} scan`, newProgress);
         } catch (error) {
-          console.error(`Error running ${tool}:`, error);
+          const toolElapsed = Date.now() - toolStartTime;
+          
+          orchestratorLogger.error(`❌ ${tool} scan failed`, {
+            tool,
+            error: error.message,
+            errorCode: error.code,
+            executionTimeMs: toolElapsed,
+            ...scanContext
+          });
+          
           this.sendProgress(
             `Error in ${tool}: ${error.message}`,
             this.progress
           );
+          
+          toolResults.push({
+            tool,
+            error: error.message,
+            executionTimeMs: toolElapsed
+          });
+          
           // Continue with other tools even if one fails
         }
       }
 
+      const totalScanTime = Date.now() - scanStartTime;
+      
       this.sendProgress('Scan completed successfully!', 100);
+
+      // Deduplicate results
+      const deduplicationStart = Date.now();
+      const finalResults = this.deduplicateResults(this.results);
+      const deduplicationElapsed = Date.now() - deduplicationStart;
+
+      orchestratorLogger.info('🎉 Scan completed successfully', {
+        totalScanTimeMs: totalScanTime,
+        deduplicationTimeMs: deduplicationElapsed,
+        rawResultCount: this.results.length,
+        finalResultCount: finalResults.length,
+        duplicatesRemoved: this.results.length - finalResults.length,
+        toolResults,
+        ...scanContext
+      });
 
       // Send completion message to trigger frontend transition
       this.sendCompletion();
 
-      // Deduplicate results
-      return this.deduplicateResults(this.results);
+      return finalResults;
     } catch (error) {
+      const totalScanTime = Date.now() - scanStartTime;
+      
+      orchestratorLogger.error('❌ Scan failed', {
+        error: error.message,
+        errorCode: error.code,
+        stack: error.stack,
+        totalScanTimeMs: totalScanTime,
+        currentProgress: this.progress,
+        currentTool: this.currentTool,
+        ...scanContext
+      });
+      
       this.sendProgress(`Scan failed: ${error.message}`, this.progress);
       throw error;
     }
@@ -147,18 +296,18 @@ export class ScanOrchestrator {
     const isWSL2Available = await this.wsl2Bridge.isAvailable();
 
     if (process.env.MOCK_WSL2 === 'true') {
-      console.log('Using mocked Semgrep results (MOCK_WSL2=true)');
+      orchestratorLogger.info('Using mocked Semgrep results (MOCK_WSL2=true)');
       // Simulate some processing time
       await new Promise((resolve) => setTimeout(resolve, 2000));
       return this.getMockedSemgrepResults();
     }
 
     if (!isWSL2Available) {
-      console.log('WSL2 not available, returning empty results');
+      orchestratorLogger.warn('WSL2 not available, returning empty results');
       return [];
     }
 
-    console.log(`Running real Semgrep on ${targetPath}`);
+    orchestratorLogger.info(`Running real Semgrep on ${targetPath}`);
     return this.wsl2Bridge.runSemgrep(targetPath);
   }
 
@@ -172,18 +321,18 @@ export class ScanOrchestrator {
     const isWSL2Available = await this.wsl2Bridge.isAvailable();
 
     if (process.env.MOCK_WSL2 === 'true') {
-      console.log('Using mocked Trivy results (MOCK_WSL2=true)');
+      orchestratorLogger.info('Using mocked Trivy results (MOCK_WSL2=true)');
       // Simulate some processing time
       await new Promise((resolve) => setTimeout(resolve, 3000));
       return this.getMockedTrivyResults();
     }
 
     if (!isWSL2Available) {
-      console.log('WSL2 not available, returning empty results');
+      orchestratorLogger.warn('WSL2 not available, returning empty results');
       return [];
     }
 
-    console.log(`Running real Trivy on ${targetPath}`);
+    orchestratorLogger.info(`Running real Trivy on ${targetPath}`);
     return this.wsl2Bridge.runTrivy(targetPath);
   }
 
@@ -329,7 +478,7 @@ export class ScanOrchestrator {
    * @returns {string} Resolved file path
    */
   resolveTargetPath(targetId) {
-    console.log(`🔍 Resolving target path for: "${targetId}"`);
+    orchestratorLogger.debug(`🔍 Resolving target path for: "${targetId}"`);
     
     // IMPORTANT: Direct paths are ONLY allowed for registered folder uploads
     // ZIP files and repository clones should ALWAYS use temp directory
@@ -337,13 +486,13 @@ export class ScanOrchestrator {
     // Check if this is a registered direct folder scan
     if (folderRegistry.isDirectScan(targetId)) {
       const directPath = folderRegistry.getPath(targetId);
-      console.log(`📂 Direct folder scan: ${targetId} -> ${directPath}`);
+      orchestratorLogger.debug(`📂 Direct folder scan: ${targetId} -> ${directPath}`);
       return directPath;
     }
 
     // Check if targetId is already a full path (absolute path)
     if (path.isAbsolute(targetId)) {
-      console.log(`📍 Direct scanning: Using absolute path: ${targetId}`);
+      orchestratorLogger.debug(`📍 Direct scanning: Using absolute path: ${targetId}`);
       return targetId;
     }
 
@@ -352,15 +501,15 @@ export class ScanOrchestrator {
     if (uuidRegex.test(targetId)) {
       const tempDir = process.env.TEMP_DIR || path.join(__dirname, '../../../temp');
       const resolvedPath = path.join(tempDir, targetId);
-      console.log(`🆔 UUID detected: Resolved '${targetId}' to temp path: ${resolvedPath}`);
+      orchestratorLogger.debug(`🆔 UUID detected: Resolved '${targetId}' to temp path: ${resolvedPath}`);
       return resolvedPath;
     }
 
     // For relative paths that are NOT UUIDs, treat as direct paths (but warn)
     if (targetId.includes('/') || targetId.includes('\\')) {
       const resolvedPath = path.resolve(targetId);
-      console.log(`⚠️  POTENTIAL BUG: Resolved relative path '${targetId}' to: ${resolvedPath}`);
-      console.log(`⚠️  This might be scanning local files instead of uploaded/cloned content!`);
+      orchestratorLogger.warn(`⚠️  POTENTIAL BUG: Resolved relative path '${targetId}' to: ${resolvedPath}`);
+      orchestratorLogger.warn(`⚠️  This might be scanning local files instead of uploaded/cloned content!`);
       return resolvedPath;
     }
 
@@ -373,26 +522,26 @@ export class ScanOrchestrator {
     // Check if the target exists in temp directory
     try {
       if (fs.existsSync(tempPath)) {
-        console.log(`✅ Found in temp directory: ${tempPath}`);
+        orchestratorLogger.debug(`✅ Found in temp directory: ${tempPath}`);
         return tempPath;
       }
     } catch (error) {
-      console.log(`❌ Error checking temp path: ${error.message}`);
+      orchestratorLogger.warn(`❌ Error checking temp path: ${error.message}`);
     }
 
     // Check if it exists locally (this might be the bug)
     try {
       if (fs.existsSync(localPath)) {
-        console.log(`⚠️  FOUND LOCALLY (POTENTIAL BUG): ${localPath}`);
-        console.log(`⚠️  This suggests scanning local project files instead of uploaded/cloned content!`);
+        orchestratorLogger.warn(`⚠️  FOUND LOCALLY (POTENTIAL BUG): ${localPath}`);
+        orchestratorLogger.warn(`⚠️  This suggests scanning local project files instead of uploaded/cloned content!`);
         return localPath;
       }
     } catch (error) {
-      console.log(`❌ Error checking local path: ${error.message}`);
+      orchestratorLogger.warn(`❌ Error checking local path: ${error.message}`);
     }
 
     // Default to temp directory
-    console.log(`🎯 Default: Using temp path: ${tempPath}`);
+    orchestratorLogger.debug(`🎯 Default: Using temp path: ${tempPath}`);
     return tempPath;
   }
 
@@ -413,12 +562,12 @@ export class ScanOrchestrator {
       // 1 = OPEN
       try {
         client.send(JSON.stringify(completionData));
-        console.log(`[${this.scanId}] Sent completion notification`);
+        orchestratorLogger.debug(`[${this.scanId}] Sent completion notification`);
       } catch (error) {
-        console.error('Failed to send completion message:', error);
+        orchestratorLogger.error('Failed to send completion message:', error);
       }
     } else {
-      console.log(
+      orchestratorLogger.debug(
         `No WebSocket client found for completion notification: ${this.scanId}`
       );
     }
@@ -434,18 +583,18 @@ export class ScanOrchestrator {
     const isWSL2Available = await this.wsl2Bridge.isAvailable();
 
     if (process.env.MOCK_WSL2 === 'true') {
-      console.log(
+      orchestratorLogger.info(
         'Using mocked Semgrep results with real-time updates (MOCK_WSL2=true)'
       );
       return this.getMockedSemgrepResultsRealTime();
     }
 
     if (!isWSL2Available) {
-      console.log('WSL2 not available, returning empty results');
+      orchestratorLogger.warn('WSL2 not available, returning empty results');
       return [];
     }
 
-    console.log(`Running real Semgrep on ${targetPath}`);
+    orchestratorLogger.info(`Running real Semgrep on ${targetPath}`);
     // For real Semgrep, fall back to original method for now
     return this.runSemgrep(targetPath);
   }
@@ -460,18 +609,18 @@ export class ScanOrchestrator {
     const isWSL2Available = await this.wsl2Bridge.isAvailable();
 
     if (process.env.MOCK_WSL2 === 'true') {
-      console.log(
+      orchestratorLogger.info(
         'Using mocked Trivy results with real-time updates (MOCK_WSL2=true)'
       );
       return this.getMockedTrivyResultsRealTime();
     }
 
     if (!isWSL2Available) {
-      console.log('WSL2 not available, returning empty results');
+      orchestratorLogger.warn('WSL2 not available, returning empty results');
       return [];
     }
 
-    console.log(`Running real Trivy on ${targetPath}`);
+    orchestratorLogger.info(`Running real Trivy on ${targetPath}`);
     // For real Trivy, fall back to original method for now
     return this.runTrivy(targetPath);
   }
@@ -801,14 +950,14 @@ export class ScanOrchestrator {
       // 1 = OPEN
       try {
         client.send(JSON.stringify(vulnerabilityData));
-        console.log(
+        orchestratorLogger.debug(
           `[${this.scanId}] Sent vulnerability: ${vulnerability.type} (${vulnerability.severity})`
         );
       } catch (error) {
-        console.error('Failed to send vulnerability message:', error);
+        orchestratorLogger.error('Failed to send vulnerability message:', error);
       }
     } else {
-      console.log(`No WebSocket client found for vulnerability ${this.scanId}`);
+      orchestratorLogger.debug(`No WebSocket client found for vulnerability ${this.scanId}`);
     }
   }
 
@@ -836,13 +985,13 @@ export class ScanOrchestrator {
       try {
         client.send(JSON.stringify(progressData));
       } catch (error) {
-        console.error('Failed to send WebSocket message:', error);
+        orchestratorLogger.error('Failed to send WebSocket message:', error);
       }
     } else {
-      console.log(`No WebSocket client found for scan ${this.scanId}`);
+      orchestratorLogger.debug(`No WebSocket client found for scan ${this.scanId}`);
     }
 
-    // Also log to console
-    console.log(`[${this.scanId}] ${message} (${Math.round(percent)}%)`);
+    // Also log progress
+    orchestratorLogger.debug(`[${this.scanId}] ${message} (${Math.round(percent)}%)`);
   }
 }

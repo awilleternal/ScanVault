@@ -22,19 +22,44 @@ const __dirname = path.dirname(__filename);
 // Load environment variables
 dotenv.config();
 
-// Configure logger
+// Configure comprehensive logger with file rotation
 const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
+  level: process.env.LOG_LEVEL || 'debug',
   format: winston.format.combine(
     winston.format.timestamp(),
-    winston.format.json()
+    winston.format.errors({ stack: true }),
+    winston.format.printf(({ timestamp, level, message, ...meta }) => {
+      const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
+      return `${timestamp} [APP-${level.toUpperCase()}] ${message}${metaStr}`;
+    })
   ),
   transports: [
     new winston.transports.Console({
-      format: winston.format.simple(),
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      ),
     }),
+    new winston.transports.File({ 
+      filename: 'logs/app-error.log', 
+      level: 'error',
+      maxsize: 10485760, // 10MB
+      maxFiles: 5
+    }),
+    new winston.transports.File({ 
+      filename: 'logs/app-combined.log',
+      maxsize: 10485760, // 10MB
+      maxFiles: 5
+    })
   ],
 });
+
+// Ensure logs directory exists
+import fs from 'fs';
+if (!fs.existsSync('logs')) {
+  fs.mkdirSync('logs', { recursive: true });
+  logger.info('📁 Created logs directory');
+}
 
 // Initialize Express app
 const app = express();
@@ -90,33 +115,70 @@ app.get('/api/health', (req, res) => {
 app.use('/api', uploadRoutes);
 app.use('/api/scan', scanRoutes);
 
-// WebSocket connection handling
+// WebSocket connection handling with detailed logging
 wss.on('connection', (ws, req) => {
+  const connectionStart = Date.now();
   // Extract scanId from URL path like /ws/scanId
   const urlParts = req.url.split('/');
   const scanId = urlParts[urlParts.length - 1];
+  const clientIp = req.socket.remoteAddress;
 
-  logger.info(`WebSocket client connected for scan: ${scanId}`);
+  logger.info('🔌 WebSocket client connected', {
+    scanId,
+    clientIp,
+    userAgent: req.headers['user-agent'],
+    url: req.url,
+    connectionTime: new Date().toISOString()
+  });
 
   wsClients.set(scanId, ws);
 
-  ws.on('close', () => {
-    logger.info(`WebSocket client disconnected for scan: ${scanId}`);
+  ws.on('close', (code, reason) => {
+    const sessionDuration = Date.now() - connectionStart;
+    logger.info('🔌 WebSocket client disconnected', {
+      scanId,
+      sessionDurationMs: sessionDuration,
+      closeCode: code,
+      closeReason: reason?.toString()
+    });
     wsClients.delete(scanId);
   });
 
   ws.on('error', (error) => {
-    logger.error(`WebSocket error for scan ${scanId}:`, error);
+    const sessionDuration = Date.now() - connectionStart;
+    logger.error('❌ WebSocket error', {
+      scanId,
+      error: error.message,
+      sessionDurationMs: sessionDuration,
+      readyState: ws.readyState
+    });
+  });
+
+  ws.on('message', (data) => {
+    logger.debug('📥 WebSocket message received from client', {
+      scanId,
+      messageSize: data.length,
+      message: data.toString().substring(0, 100) // First 100 chars
+    });
   });
 
   // Send connection confirmation
-  ws.send(
-    JSON.stringify({
-      type: 'connected',
-      scanId: scanId,
-      timestamp: new Date().toISOString(),
-    })
-  );
+  const confirmationMessage = {
+    type: 'connected',
+    scanId: scanId,
+    timestamp: new Date().toISOString(),
+    serverInfo: {
+      version: process.env.npm_package_version || 'unknown',
+      nodeVersion: process.version
+    }
+  };
+  
+  ws.send(JSON.stringify(confirmationMessage));
+  
+  logger.debug('📤 Connection confirmation sent', {
+    scanId,
+    messageSize: JSON.stringify(confirmationMessage).length
+  });
 });
 
 // Make WebSocket clients available to scan orchestrator
