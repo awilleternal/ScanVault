@@ -1,0 +1,20 @@
+{
+  "extends": [
+    "../.eslintrc.json",
+    "plugin:node/recommended"
+  ],
+  "plugins": [
+    "security-node"
+  ],
+  "env": {
+    "node": true,
+    "es2022": true
+  },
+  "rules": {
+    "node/no-unpublished-require": "off",
+    "node/no-unsupported-features/es-syntax": "off",
+    "security-node/detect-crlf": "error",
+    "security-node/detect-non-literal-require-calls": "error",
+    "security-node/non-literal-reg-expr": "error"
+  }
+}

@@ -1,0 +1,11 @@
+{
+    "mcpServers": {
+      "playwright": {
+        "command": "uvx",
+        "args": ["@playwright/mcp@latest"],
+        "disabled": false,
+        "autoApprove": []
+      }
+    }
+  }
+  

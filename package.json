@@ -1,0 +1,66 @@
+{
+  "name": "scanvault",
+  "version": "1.0.0",
+  "description": "ScanVault - Advanced security vulnerability scanning platform for plugins, repositories, and applications",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:ui": "npx playwright test --ui",
+    "test:debug": "npx playwright test --debug",
+    "test:upload": "npx playwright test tests/upload.spec.js",
+    "test:repository": "npx playwright test tests/repository.spec.js",
+    "test:scanner": "npx playwright test tests/scanner-selection.spec.js",
+    "test:progress": "npx playwright test tests/scan-progress.spec.js",
+    "test:results": "npx playwright test tests/results-dashboard.spec.js",
+    "test:api": "npx playwright test tests/api-integration.spec.js",
+    "test:e2e": "npx playwright test tests/e2e-workflow.spec.js",
+    "test:chromium": "npx playwright test --project=chromium",
+    "test:firefox": "npx playwright test --project=firefox",
+    "test:webkit": "npx playwright test --project=webkit",
+    "test:mobile": "npx playwright test --project=\"Mobile Chrome\" --project=\"Mobile Safari\"",
+    "test:report": "npx playwright show-report",
+    "test:install": "npx playwright install",
+    "test:security": "npm audit --audit-level moderate && cd frontend && npm audit --audit-level moderate && cd ../backend && npm audit --audit-level moderate",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:fix": "npm run lint:fix:frontend && npm run lint:fix:backend",
+    "lint:fix:frontend": "cd frontend && npm run lint -- --fix",
+    "lint:fix:backend": "cd backend && npm run lint -- --fix",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,md}\"",
+    "clean": "rimraf frontend/dist backend/dist frontend/node_modules backend/node_modules node_modules test-results",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.34.0",
+    "@playwright/test": "^1.55.0",
+    "concurrently": "^9.2.1",
+    "prettier": "^3.2.5",
+    "rimraf": "^6.0.1"
+  },
+  "overrides": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "security-scanner-frontend": {
+      "react": "18.3.1",
+      "react-dom": "18.3.1"
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
