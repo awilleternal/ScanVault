@@ -41,6 +41,7 @@ function App() {
    * @param {Object} fileData - The uploaded file data
    */
   const handleFileUploaded = (fileData) => {
+    console.log('🔥 [FRONTEND] File uploaded/URL submitted:', fileData);
     setUploadedFile(fileData);
     setScanStatus('selecting');
   };
@@ -58,7 +59,13 @@ function App() {
       setLatestVulnerability(null);
 
       // Start the scan
+      console.log('🔥 [FRONTEND] Starting scan with:');
+      console.log('🔥 [FRONTEND] - Target ID:', uploadedFile.id);
+      console.log('🔥 [FRONTEND] - Selected Tools:', selectedTools);
+      console.log('🔥 [FRONTEND] - Full uploaded file data:', uploadedFile);
+      
       const scanResponse = await startScan(uploadedFile.id, selectedTools);
+      console.log('🔥 [FRONTEND] Scan response:', scanResponse);
       setCurrentScanId(scanResponse.scanId);
 
       // Connect to WebSocket for progress updates

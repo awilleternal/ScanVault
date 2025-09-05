@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { WSL2Bridge } from './wsl2Bridge.js';
 import { ODCBridge } from './odcBridge.js';
+import { folderRegistry } from './folderRegistry.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -30,21 +31,47 @@ export class ScanOrchestrator {
    */
   async startScan(targetId, selectedTools) {
     try {
+      console.log(`🔥 [ORCHESTRATOR] Starting scan with:`);
+      console.log(`🔥 [ORCHESTRATOR] - Target ID: ${targetId}`);
+      console.log(`🔥 [ORCHESTRATOR] - Tools: ${JSON.stringify(selectedTools)}`);
+      
       this.sendProgress('Initializing scan...', 0);
 
       // Resolve targetId to actual file path
+      console.log(`🔥 [ORCHESTRATOR] About to resolve target path for: ${targetId}`);
       const targetPath = this.resolveTargetPath(targetId);
+      console.log(`🔥 [ORCHESTRATOR] Resolved target path: ${targetPath}`);
+      
       this.sendProgress(`Resolved target path: ${targetPath}`, 5);
 
       // Validate target path exists and is accessible
+      console.log(`🔥 [ORCHESTRATOR] Checking if target path exists: ${targetPath}`);
       if (!fs.existsSync(targetPath)) {
+        console.log(`🔥 [ORCHESTRATOR] ❌ Target path does NOT exist: ${targetPath}`);
         throw new Error(`Target path does not exist: ${targetPath}`);
       }
+      console.log(`🔥 [ORCHESTRATOR] ✅ Target path exists`);
 
       // Additional validation for directory structure
       const stats = fs.statSync(targetPath);
       if (!stats.isDirectory()) {
+        console.log(`🔥 [ORCHESTRATOR] ❌ Target path is not a directory: ${targetPath}`);
         throw new Error(`Target path is not a directory: ${targetPath}`);
+      }
+      console.log(`🔥 [ORCHESTRATOR] ✅ Target path is a directory`);
+
+      // List files in the target directory for debugging
+      try {
+        const files = fs.readdirSync(targetPath);
+        console.log(`🔥 [ORCHESTRATOR] Files in target directory (${files.length} total):`);
+        files.slice(0, 10).forEach(file => {
+          console.log(`🔥 [ORCHESTRATOR] - ${file}`);
+        });
+        if (files.length > 10) {
+          console.log(`🔥 [ORCHESTRATOR] ... and ${files.length - 10} more files`);
+        }
+      } catch (error) {
+        console.log(`🔥 [ORCHESTRATOR] ❌ Error listing files: ${error.message}`);
       }
 
       // Log scanning mode for debugging
@@ -302,33 +329,71 @@ export class ScanOrchestrator {
    * @returns {string} Resolved file path
    */
   resolveTargetPath(targetId) {
+    console.log(`🔍 Resolving target path for: "${targetId}"`);
+    
     // IMPORTANT: Direct paths are ONLY allowed for registered folder uploads
     // ZIP files and repository clones should ALWAYS use temp directory
 
+    // Check if this is a registered direct folder scan
+    if (folderRegistry.isDirectScan(targetId)) {
+      const directPath = folderRegistry.getPath(targetId);
+      console.log(`📂 Direct folder scan: ${targetId} -> ${directPath}`);
+      return directPath;
+    }
+
     // Check if targetId is already a full path (absolute path)
     if (path.isAbsolute(targetId)) {
-      console.log(`Direct scanning: Using absolute path: ${targetId}`);
+      console.log(`📍 Direct scanning: Using absolute path: ${targetId}`);
       return targetId;
     }
 
-    // Check if it's a relative path (contains path separators)
-    if (targetId.includes('/') || targetId.includes('\\')) {
-      const resolvedPath = path.resolve(targetId);
-      console.log(
-        `Direct scanning: Resolved relative path '${targetId}' to: ${resolvedPath}`
-      );
+    // Check if it's a UUID pattern (most upload/clone IDs are UUIDs)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(targetId)) {
+      const tempDir = process.env.TEMP_DIR || path.join(__dirname, '../../../temp');
+      const resolvedPath = path.join(tempDir, targetId);
+      console.log(`🆔 UUID detected: Resolved '${targetId}' to temp path: ${resolvedPath}`);
       return resolvedPath;
     }
 
-    // For all other cases (UUIDs from ZIP/repo uploads), use temp directory
-    const tempDir =
-      process.env.TEMP_DIR || path.join(__dirname, '../../../temp');
-    const resolvedPath = path.join(tempDir, targetId);
+    // For relative paths that are NOT UUIDs, treat as direct paths (but warn)
+    if (targetId.includes('/') || targetId.includes('\\')) {
+      const resolvedPath = path.resolve(targetId);
+      console.log(`⚠️  POTENTIAL BUG: Resolved relative path '${targetId}' to: ${resolvedPath}`);
+      console.log(`⚠️  This might be scanning local files instead of uploaded/cloned content!`);
+      return resolvedPath;
+    }
 
-    console.log(
-      `Standard scanning: Resolved UUID '${targetId}' to temp path: ${resolvedPath}`
-    );
-    return resolvedPath;
+    // For simple names without paths, also check if it's a directory in current location
+    // This is likely a bug - we should prefer temp directory
+    const tempDir = process.env.TEMP_DIR || path.join(__dirname, '../../../temp');
+    const tempPath = path.join(tempDir, targetId);
+    const localPath = path.resolve(targetId);
+
+    // Check if the target exists in temp directory
+    try {
+      if (fs.existsSync(tempPath)) {
+        console.log(`✅ Found in temp directory: ${tempPath}`);
+        return tempPath;
+      }
+    } catch (error) {
+      console.log(`❌ Error checking temp path: ${error.message}`);
+    }
+
+    // Check if it exists locally (this might be the bug)
+    try {
+      if (fs.existsSync(localPath)) {
+        console.log(`⚠️  FOUND LOCALLY (POTENTIAL BUG): ${localPath}`);
+        console.log(`⚠️  This suggests scanning local project files instead of uploaded/cloned content!`);
+        return localPath;
+      }
+    } catch (error) {
+      console.log(`❌ Error checking local path: ${error.message}`);
+    }
+
+    // Default to temp directory
+    console.log(`🎯 Default: Using temp path: ${tempPath}`);
+    return tempPath;
   }
 
   /**

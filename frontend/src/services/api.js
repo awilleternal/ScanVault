@@ -126,10 +126,12 @@ export const cloneRepository = async (repositoryUrl) => {
  * @returns {Promise<Object>} Scan response with scan ID and WebSocket URL
  */
 export const startScan = async (targetId, selectedTools) => {
+  console.log('🔥 [API] Making scan request with:', { targetId, selectedTools });
   const response = await api.post('/scan', {
     targetId,
     selectedTools,
   });
+  console.log('🔥 [API] Scan response received:', response);
   return response;
 };
 

@@ -16,6 +16,10 @@ router.post('/', async (req, res, next) => {
   try {
     const { targetId, selectedTools } = req.body;
 
+    console.log(`🔥 [SCAN] Starting scan request:`);
+    console.log(`🔥 [SCAN] - Target ID: ${targetId}`);
+    console.log(`🔥 [SCAN] - Selected Tools: ${JSON.stringify(selectedTools)}`);
+
     if (!targetId) {
       return res.status(400).json({
         error: {
@@ -38,6 +42,7 @@ router.post('/', async (req, res, next) => {
 
     // Create scan ID
     const scanId = uuidv4();
+    console.log(`🔥 [SCAN] Generated scan ID: ${scanId}`);
 
     // Get WebSocket clients from app locals
     const wsClients = req.app.locals.wsClients;
@@ -47,10 +52,15 @@ router.post('/', async (req, res, next) => {
 
     // Check if this is a direct folder scan
     let actualTargetId = targetId;
+    console.log(`🔥 [SCAN] Checking if direct folder scan for: ${targetId}`);
+    console.log(`🔥 [SCAN] Is direct scan: ${folderRegistry.isDirectScan(targetId)}`);
+    
     if (folderRegistry.isDirectScan(targetId)) {
       // Use the actual folder path for direct scans
       actualTargetId = folderRegistry.getPath(targetId);
-      console.log(`Direct folder scan: ${targetId} -> ${actualTargetId}`);
+      console.log(`🔥 [SCAN] Direct folder scan: ${targetId} -> ${actualTargetId}`);
+    } else {
+      console.log(`🔥 [SCAN] Not a direct scan, using original target ID: ${targetId}`);
     }
 
     // Store scan session
@@ -63,6 +73,8 @@ router.post('/', async (req, res, next) => {
       startTime: new Date(),
       orchestrator,
     });
+
+    console.log(`🔥 [SCAN] Stored scan session with actualTargetId: ${actualTargetId}`);
 
     // Start scan in background
     orchestrator

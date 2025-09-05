@@ -136,9 +136,16 @@ router.post('/clone', async (req, res, next) => {
     }
 
     // Clone the repository
+    console.log(`🔥 [CLONE] Starting repository clone for: ${repositoryUrl}`);
     const cloneResult = await fileHandler.cloneRepository(repositoryUrl);
+    
+    console.log(`🔥 [CLONE] Clone successful! Details:`);
+    console.log(`🔥 [CLONE] - ID: ${cloneResult.id}`);
+    console.log(`🔥 [CLONE] - Path: ${cloneResult.path}`);
+    console.log(`🔥 [CLONE] - Name: ${cloneResult.name}`);
+    console.log(`🔥 [CLONE] - File Count: ${cloneResult.fileCount}`);
 
-    res.json({
+    const response = {
       id: cloneResult.id,
       repositoryUrl,
       repositoryName: cloneResult.name,
@@ -146,7 +153,10 @@ router.post('/clone', async (req, res, next) => {
       timestamp: new Date().toISOString(),
       type: 'repository',
       scanReady: true,
-    });
+    };
+
+    console.log(`🔥 [CLONE] Returning response to frontend:`, response);
+    res.json(response);
   } catch (error) {
     next(error);
   }
