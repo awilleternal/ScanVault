@@ -1,19 +1,47 @@
 # 🛡️ ScanVault - Advanced Security Intelligence Platform
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-18.x-blue)](https://reactjs.org/)
+[![Express](https://img.shields.io/badge/Express-4.x-green)](https://expressjs.com/)
+
 **ScanVault** is a cutting-edge security vulnerability scanning platform that performs comprehensive automated security analysis on plugins, repositories, and applications. Built for security professionals and development teams who demand enterprise-grade vulnerability detection with an intuitive, modern interface.
+
+🌟 **Live Demo**: [GitHub Repository](https://github.com/awilleternal/ScanVault)
+
+## 🎯 Key Highlights
+
+- **🔍 Multi-Engine Scanning**: Integrates Semgrep, Trivy, and OWASP Dependency Check
+- **🚀 Real-time Results**: WebSocket-powered live scanning with progress tracking
+- **📊 Comprehensive Reports**: Detailed vulnerability analysis with severity grouping
+- **🎨 Modern UI**: Clean, responsive interface built with React + Tailwind CSS
+- **🔗 Repository Support**: Direct GitHub/Bitbucket repository scanning
+- **⚡ Fast Performance**: Optimized for large codebases and quick results
 
 ## 🚀 Features
 
-- **Multiple Upload Options**: Drag-and-drop ZIP files or provide repository URLs
-- **Security Tools Integration**:
-  - Semgrep (via WSL2) - Static analysis for security issues
-  - Trivy (via WSL2) - Comprehensive vulnerability scanner
-  - OWASP Dependency Check (Windows native) - Dependency vulnerability detection
-- **Real-time Progress**: WebSocket-based live scan progress and logs
-- **Severity Grouping**: Results organized by severity (Critical, High, Medium, Low, Info)
-- **Suggested Fixes**: Actionable remediation suggestions for vulnerabilities
-- **Report Generation**: Download results as JSON or PDF reports
-- **Clean UI**: Modern, responsive interface built with React and Tailwind CSS
+### 📁 **Input Methods**
+- **Drag & Drop**: Upload ZIP files containing your codebase
+- **Repository URLs**: Direct scanning of GitHub/Bitbucket repositories
+- **Local Folders**: Scan local project directories
+
+### 🔍 **Security Scanning Engines**
+- **Semgrep** (via WSL2): Advanced static analysis for security vulnerabilities
+- **Trivy** (via WSL2): Container and dependency vulnerability scanning
+- **OWASP Dependency Check**: Java/.NET dependency vulnerability detection
+
+### 📊 **Results & Reporting**
+- **Real-time Progress**: WebSocket-powered live updates during scanning
+- **Severity Classification**: Critical, High, Medium, Low, Info groupings
+- **Detailed Analysis**: File locations, line numbers, and vulnerability descriptions
+- **Actionable Fixes**: Remediation suggestions and security best practices
+- **Export Options**: JSON and PDF report generation
+
+### 🎨 **User Experience**
+- **Modern Interface**: Clean, responsive design with Tailwind CSS
+- **Progress Monitoring**: Real-time scan progress with detailed logs
+- **Error Handling**: Comprehensive error reporting and troubleshooting
+- **Mobile Responsive**: Works seamlessly across all device sizes
 
 ## 📋 Prerequisites
 
@@ -27,8 +55,8 @@
 1. Clone the repository:
 
 ```bash
-git clone <repository-url>
-cd scanvault
+git clone https://github.com/awilleternal/ScanVault.git
+cd ScanVault
 ```
 
 2. Install dependencies:
@@ -144,7 +172,7 @@ LOG_LEVEL=info
 FRONTEND_URL=http://localhost:3000
 
 # Security Scanner Configuration
-MOCK_WSL2=true           # Set to false when WSL2 is available
+MOCK_WSL2=false          # Set to true for demo/testing without WSL2
 ENABLE_ODC=true          # Enable OWASP Dependency Check
 SCAN_TIMEOUT=300000      # 5 minutes timeout
 
@@ -177,7 +205,20 @@ If ports 3000 or 5000 are already in use, you can change them in:
 
 ## 📄 License
 
-This project is private and proprietary.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 📈 Repository Stats
+
+- **Total Files**: 72 files
+- **Languages**: JavaScript, React, Node.js, HTML, CSS
+- **Test Coverage**: Comprehensive E2E and unit testing with Playwright
+- **CI/CD**: GitHub Actions workflow for automated testing
+
+## 🔗 Related Projects
+
+- [OWASP Dependency Check](https://owasp.org/www-project-dependency-check/)
+- [Semgrep](https://semgrep.dev/)
+- [Trivy](https://trivy.dev/)
 
 ## 🙏 Acknowledgments
 
