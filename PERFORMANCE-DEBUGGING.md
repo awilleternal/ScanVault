@@ -253,3 +253,6 @@ tail -f backend/logs/*.log | grep -E "TimeMs|Duration"
 ```
 
 This comprehensive logging system will help you identify exactly where performance bottlenecks are occurring in your application!
+
+
+

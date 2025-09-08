@@ -176,3 +176,6 @@ MOCK_WSL2=true          # Use mock results for testing
 | WebSocket Connect | <1s | 1-3s | >3s |
 
 This comprehensive logging system will help you **identify exactly where performance bottlenecks are occurring** and provide the data needed to optimize the application! 🚀
+
+
+
